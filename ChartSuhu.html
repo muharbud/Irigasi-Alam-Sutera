@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Grafik Suhu Realtime</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script type="module">
+    // Import Firebase SDK Modular
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+    // Konfigurasi Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyAmLp85bbiKeVbZJcWCnZKtzVPxMWZ-Q_Y",
+      authDomain: "irrigation-smart-system-e518a.firebaseapp.com",
+      databaseURL: "https://irrigation-smart-system-e518a-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "irrigation-smart-system-e518a",
+      storageBucket: "irrigation-smart-system-e518a.appspot.com",
+      messagingSenderId: "447345964294",
+      appId: "1:447345964294:web:24c362db87d28c4d67dcfc"
+    };
+
+    // Inisialisasi Firebase
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+
+    // Inisialisasi Chart.js
+    const ctx = document.getElementById('suhuChart').getContext('2d');
+    const suhuChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [],  // Timestamp
+        datasets: [{
+          label: 'Suhu (°C)',
+          data: [],
+          backgroundColor: 'rgba(255, 99, 132, 0.2)',
+          borderColor: 'rgba(255, 99, 132, 1)',
+          borderWidth: 2,
+          tension: 0.3,
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: 'Waktu'
+            }
+          },
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Suhu (°C)'
+            }
+          }
+        }
+      }
+    });
+
+    // Fungsi tambah data ke chart
+    function updateChart(value) {
+      const waktu = new Date().toLocaleTimeString();
+      suhuChart.data.labels.push(waktu);
+      suhuChart.data.datasets[0].data.push(value);
+
+      // Maksimal 20 data di chart
+      if (suhuChart.data.labels.length > 20) {
+        suhuChart.data.labels.shift();
+        suhuChart.data.datasets[0].data.shift();
+      }
+
+      suhuChart.update();
+    }
+
+    // Pantau perubahan suhu di Firebase
+    const suhuRef = ref(database, 'sensor/suhu');
+    onValue(suhuRef, (snapshot) => {
+      const suhu = snapshot.val();
+      if (suhu !== null) {
+        updateChart(suhu);
+        document.getElementById("currentTemp").textContent = suhu.toFixed(2) + " °C";
+      }
+    });
+  </script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 2rem;
+      text-align: center;
+    }
+    h2 {
+      margin-bottom: 0.5rem;
+    }
+    #currentTemp {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    canvas {
+      max-width: 100%;
+      height: 400px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Grafik Suhu Realtime</h2>
+  <div id="currentTemp">Memuat...</div>
+  <canvas id="suhuChart"></canvas>
+</body>
+</html>
