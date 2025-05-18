@@ -1,15 +1,45 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Grafik Suhu Realtime</title>
+  <meta charset="UTF-8">
+  <title>Grafik Historis Suhu</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script type="module">
-    // Import Firebase SDK Modular
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 30px;
+      background: #f0f4f8;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .chart-container {
+      position: relative;
+      width: 100%;
+      max-width: 1000px;
+      height: 500px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    canvas {
+      width: 100% !important;
+      height: 100% !important;
+    }
+  </style>
+</head>
+<body>
+  <h2>Grafik Historis Suhu Hari Ini</h2>
+  <div class="chart-container">
+    <canvas id="suhuChart"></canvas>
+  </div>
 
+  <script>
     // Konfigurasi Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyAmLp85bbiKeVbZJcWCnZKtzVPxMWZ-Q_Y",
@@ -17,98 +47,96 @@
       databaseURL: "https://irrigation-smart-system-e518a-default-rtdb.asia-southeast1.firebasedatabase.app",
       projectId: "irrigation-smart-system-e518a",
       storageBucket: "irrigation-smart-system-e518a.appspot.com",
-      messagingSenderId: "447345964294",
-      appId: "1:447345964294:web:24c362db87d28c4d67dcfc"
+      messagingSenderId: "547647221577",
+      appId: "1:547647221577:web:e4a2ffb31c8ecf4d0d303c"
     };
 
-    // Inisialisasi Firebase
-    const app = initializeApp(firebaseConfig);
-    const database = getDatabase(app);
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
 
-    // Inisialisasi Chart.js
+    const suhuData = [];
+    const waktuData = [];
+
     const ctx = document.getElementById('suhuChart').getContext('2d');
     const suhuChart = new Chart(ctx, {
       type: 'line',
       data: {
-        labels: [],  // Timestamp
+        labels: waktuData,
         datasets: [{
           label: 'Suhu (°C)',
-          data: [],
-          backgroundColor: 'rgba(255, 99, 132, 0.2)',
+          data: suhuData,
           borderColor: 'rgba(255, 99, 132, 1)',
-          borderWidth: 2,
+          backgroundColor: 'rgba(255, 99, 132, 0.2)',
           tension: 0.3,
-          fill: true
+          fill: true,
+          pointRadius: 3
         }]
       },
       options: {
         responsive: true,
+        maintainAspectRatio: false,
         scales: {
           x: {
-            title: {
-              display: true,
-              text: 'Waktu'
-            }
+            title: { display: true, text: 'Waktu (HH-MM-SS)' }
           },
           y: {
-            beginAtZero: true,
-            title: {
-              display: true,
-              text: 'Suhu (°C)'
-            }
+            title: { display: true, text: 'Suhu (°C)' }
+            // min dan max akan di-set secara dinamis
+          }
+        },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top'
+          },
+          tooltip: {
+            mode: 'index',
+            intersect: false
           }
         }
       }
     });
 
-    // Fungsi tambah data ke chart
-    function updateChart(value) {
-      const waktu = new Date().toLocaleTimeString();
-      suhuChart.data.labels.push(waktu);
-      suhuChart.data.datasets[0].data.push(value);
+    function loadData() {
+      const now = new Date();
+      const yyyy = now.getFullYear();
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const dd = String(now.getDate()).padStart(2, '0');
+      const todayPath = `/history/${yyyy}-${mm}-${dd}`;
 
-      // Maksimal 20 data di chart
-      if (suhuChart.data.labels.length > 20) {
-        suhuChart.data.labels.shift();
-        suhuChart.data.datasets[0].data.shift();
-      }
+      database.ref(todayPath).once('value', snapshot => {
+        const data = snapshot.val();
+        if (data) {
+          const newWaktu = [];
+          const newSuhu = [];
 
-      suhuChart.update();
+          Object.keys(data).sort().forEach(jam => {
+            if (data[jam].suhu !== undefined) {
+              newWaktu.push(jam);
+              newSuhu.push(data[jam].suhu);
+            }
+          });
+
+          // Hitung min dan max suhu, beri padding
+          const minSuhu = Math.min(...newSuhu);
+          const maxSuhu = Math.max(...newSuhu);
+          const padding = 1;
+
+          suhuChart.options.scales.y.min = Math.floor(minSuhu - padding);
+          suhuChart.options.scales.y.max = Math.ceil(maxSuhu + padding);
+
+          suhuChart.data.labels = newWaktu;
+          suhuChart.data.datasets[0].data = newSuhu;
+          suhuChart.update();
+        }
+      });
     }
 
-    // Pantau perubahan suhu di Firebase
-    const suhuRef = ref(database, 'sensor/suhu');
-    onValue(suhuRef, (snapshot) => {
-      const suhu = snapshot.val();
-      if (suhu !== null) {
-        updateChart(suhu);
-        document.getElementById("currentTemp").textContent = suhu.toFixed(2) + " °C";
-      }
-    });
+    // Load data pertama kali
+    loadData();
+
+    // Update otomatis setiap 10 detik
+    setInterval(loadData, 10000);
   </script>
-
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 2rem;
-      text-align: center;
-    }
-    h2 {
-      margin-bottom: 0.5rem;
-    }
-    #currentTemp {
-      font-size: 1.5rem;
-      margin-bottom: 1rem;
-    }
-    canvas {
-      max-width: 100%;
-      height: 400px;
-    }
-  </style>
-</head>
-<body>
-  <h2>Grafik Suhu Realtime</h2>
-  <div id="currentTemp">Memuat...</div>
-  <canvas id="suhuChart"></canvas>
 </body>
 </html>
