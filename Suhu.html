@@ -67,9 +67,11 @@
           data: suhuData,
           borderColor: 'rgba(255, 99, 132, 1)',
           backgroundColor: 'rgba(255, 99, 132, 0.2)',
-          tension: 0.3,
+          tension: 0.5, // nilai tension yang lebih tinggi untuk garis yang lebih halus
+          cubicInterpolationMode: 'monotone', // interpolasi cubic monotone
           fill: true,
-          pointRadius: 3
+          pointRadius: 0,         // sembunyikan titik data
+          pointHoverRadius: 3     // tampilkan titik saat hover
         }]
       },
       options: {
@@ -81,7 +83,6 @@
           },
           y: {
             title: { display: true, text: 'Suhu (°C)' }
-            // min dan max akan di-set secara dinamis
           }
         },
         plugins: {
@@ -117,7 +118,7 @@
             }
           });
 
-          // Hitung min dan max suhu, beri padding
+          // Hitung min dan max suhu, berikan padding agar sumbu y tidak terlalu rapat
           const minSuhu = Math.min(...newSuhu);
           const maxSuhu = Math.max(...newSuhu);
           const padding = 1;
