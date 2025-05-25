@@ -112,10 +112,19 @@
                 showSlider();
               },
               onZoomComplete: ({ chart }) => {
-                const xAxis = chart.scales.x;
-                const zoomed = (xAxis.max - xAxis.min) < waktuData.length - 1;
-                if (!zoomed) hideSlider();
-              }
+  const xAxis = chart.scales.x;
+  const shownPoints = chart.data.labels.length;
+  const totalPoints = waktuData.length;
+
+  const isFullyZoomedOut = shownPoints >= totalPoints;
+
+  if (isFullyZoomedOut) {
+    hideSlider();
+    chart.data.labels = waktuData;
+    chart.data.datasets[0].data = suhuData;
+    chart.update('none');
+  }
+}
             },
             limits: {
               x: {
