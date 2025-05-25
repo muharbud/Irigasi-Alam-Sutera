@@ -10,8 +10,8 @@
   <style>
     body {
       font-family: sans-serif;
-      padding: 30px;
       background: #f0f4f8;
+      padding: 30px;
     }
     h2 {
       text-align: center;
@@ -32,26 +32,16 @@
       width: 100% !important;
       height: 100% !important;
     }
-    #slider-container {
-      margin: 30px auto 10px;
-      max-width: 1000px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
     #rangeSlider {
-      width: 100%;
+      position: absolute;
+      bottom: 40px;
+      left: 60px;
+      right: 60px;
+      opacity: 0;
+      transition: opacity 0.3s;
     }
-    button {
-      padding: 6px 12px;
-      border: none;
-      background: #007bff;
-      color: white;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #0056b3;
+    #rangeSlider.visible {
+      opacity: 1;
     }
   </style>
 </head>
@@ -60,10 +50,6 @@
 
   <div class="chart-container">
     <canvas id="suhuChart"></canvas>
-  </div>
-
-  <div id="slider-container">
-    <button onclick="suhuChart.resetZoom()">Reset Zoom</button>
     <input type="range" id="rangeSlider" min="0" max="100" value="0">
   </div>
 
@@ -83,10 +69,12 @@
 
     let waktuData = [];
     let suhuData = [];
-    let windowSize = 20; // jumlah titik data yang tampil dalam satu window (zoom)
+    let windowSize = 30; // jumlah data tampil
     let slider = document.getElementById('rangeSlider');
+    let zoomed = false;
 
     const ctx = document.getElementById('suhuChart').getContext('2d');
+
     const suhuChart = new Chart(ctx, {
       type: 'line',
       data: {
@@ -97,7 +85,6 @@
           borderColor: 'rgba(255, 99, 132, 1)',
           backgroundColor: 'rgba(255, 99, 132, 0.2)',
           tension: 0.5,
-          cubicInterpolationMode: 'monotone',
           fill: true,
           pointRadius: 0,
           pointHoverRadius: 3
@@ -110,10 +97,8 @@
           x: {
             title: { display: true, text: 'Waktu' },
             ticks: {
-              maxRotation: 90,
-              minRotation: 45,
               autoSkip: true,
-              maxTicksLimit: 15
+              maxTicksLimit: 20
             }
           },
           y: {
@@ -122,25 +107,51 @@
         },
         plugins: {
           legend: { display: true },
-          tooltip: {
-            mode: 'index',
-            intersect: false
-          },
+          tooltip: { mode: 'index', intersect: false },
           zoom: {
-            pan: {
-              enabled: true,
-              mode: 'x'
-            },
+            pan: { enabled: true, mode: 'x' },
             zoom: {
               wheel: { enabled: true },
               pinch: { enabled: true },
-              mode: 'x'
+              mode: 'x',
+              onZoom: () => {
+                zoomed = true;
+                showSlider();
+              }
             }
           }
-        }
+        },
+        animation: false
       },
-      plugins: [ChartZoom]
+      plugins: [{
+        id: 'customSliderPlugin',
+        afterDraw(chart) {
+          const chartArea = chart.chartArea;
+          slider.style.left = chartArea.left + 'px';
+          slider.style.right = (chart.canvas.offsetWidth - chartArea.right) + 'px';
+          slider.style.bottom = (chart.canvas.offsetHeight - chartArea.bottom + 10) + 'px';
+        }
+      }]
     });
+
+    function showSlider() {
+      if (zoomed) {
+        slider.classList.add('visible');
+        slider.max = waktuData.length - windowSize;
+        slider.value = 0;
+        updateChartFromSlider();
+      }
+    }
+
+    slider.addEventListener('input', updateChartFromSlider);
+
+    function updateChartFromSlider() {
+      const start = parseInt(slider.value);
+      const end = start + windowSize;
+      suhuChart.data.labels = waktuData.slice(start, end);
+      suhuChart.data.datasets[0].data = suhuData.slice(start, end);
+      suhuChart.update('none');
+    }
 
     function loadData() {
       const now = new Date();
@@ -165,31 +176,21 @@
           waktuData = newWaktu;
           suhuData = newSuhu;
 
-          // Atur slider
-          slider.max = waktuData.length - windowSize;
-          updateChartFromSlider(); // tampilkan awal window
-
           const minSuhu = Math.min(...suhuData);
           const maxSuhu = Math.max(...suhuData);
           suhuChart.options.scales.y.min = Math.floor(minSuhu - 1);
           suhuChart.options.scales.y.max = Math.ceil(maxSuhu + 1);
+
+          if (!zoomed) {
+            suhuChart.data.labels = waktuData;
+            suhuChart.data.datasets[0].data = suhuData;
+            suhuChart.update();
+          } else {
+            showSlider();
+          }
         }
       });
     }
-
-    function updateChartFromSlider() {
-      const startIndex = parseInt(slider.value);
-      const endIndex = startIndex + windowSize;
-
-      const slicedWaktu = waktuData.slice(startIndex, endIndex);
-      const slicedSuhu = suhuData.slice(startIndex, endIndex);
-
-      suhuChart.data.labels = slicedWaktu;
-      suhuChart.data.datasets[0].data = slicedSuhu;
-      suhuChart.update();
-    }
-
-    slider.addEventListener('input', updateChartFromSlider);
 
     loadData();
     setInterval(loadData, 10000);
