@@ -4,18 +4,17 @@
   <meta charset="UTF-8">
   <title>Grafik Historis Suhu</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <style>
     body {
       font-family: sans-serif;
-      background: #f0f4f8;
+      background: #eef2f6;
       padding: 30px;
     }
     h2 {
       text-align: center;
-      margin-bottom: 40px;
     }
     .chart-container {
       position: relative;
@@ -34,14 +33,13 @@
     }
     #rangeSlider {
       position: absolute;
-      bottom: 40px;
-      left: 60px;
-      right: 60px;
       opacity: 0;
       transition: opacity 0.3s;
+      pointer-events: none;
     }
     #rangeSlider.visible {
       opacity: 1;
+      pointer-events: auto;
     }
   </style>
 </head>
@@ -69,9 +67,8 @@
 
     let waktuData = [];
     let suhuData = [];
-    let windowSize = 30; // jumlah data tampil
-    let slider = document.getElementById('rangeSlider');
-    let zoomed = false;
+    let windowSize = 30;
+    const slider = document.getElementById('rangeSlider');
 
     const ctx = document.getElementById('suhuChart').getContext('2d');
 
@@ -84,10 +81,10 @@
           data: suhuData,
           borderColor: 'rgba(255, 99, 132, 1)',
           backgroundColor: 'rgba(255, 99, 132, 0.2)',
-          tension: 0.5,
-          fill: true,
+          tension: 0.4,
           pointRadius: 0,
-          pointHoverRadius: 3
+          pointHoverRadius: 4,
+          fill: true
         }]
       },
       options: {
@@ -96,10 +93,7 @@
         scales: {
           x: {
             title: { display: true, text: 'Waktu' },
-            ticks: {
-              autoSkip: true,
-              maxTicksLimit: 20
-            }
+            ticks: { maxRotation: 90, minRotation: 45 }
           },
           y: {
             title: { display: true, text: 'Suhu (°C)' }
@@ -114,17 +108,24 @@
               wheel: { enabled: true },
               pinch: { enabled: true },
               mode: 'x',
-              onZoom: () => {
-                zoomed = true;
+              onZoom: ({ chart }) => {
                 showSlider();
+              },
+              onZoomComplete: ({ chart }) => {
+                const xAxis = chart.scales.x;
+                const zoomed = (xAxis.max - xAxis.min) < waktuData.length - 1;
+                if (!zoomed) hideSlider();
               }
+            },
+            limits: {
+              x: { minRange: 5 }
             }
           }
         },
         animation: false
       },
       plugins: [{
-        id: 'customSliderPlugin',
+        id: 'sliderPositionPlugin',
         afterDraw(chart) {
           const chartArea = chart.chartArea;
           slider.style.left = chartArea.left + 'px';
@@ -135,12 +136,17 @@
     });
 
     function showSlider() {
-      if (zoomed) {
-        slider.classList.add('visible');
-        slider.max = waktuData.length - windowSize;
-        slider.value = 0;
-        updateChartFromSlider();
-      }
+      slider.classList.add('visible');
+      slider.max = waktuData.length - windowSize;
+      slider.value = 0;
+      updateChartFromSlider();
+    }
+
+    function hideSlider() {
+      slider.classList.remove('visible');
+      suhuChart.data.labels = waktuData;
+      suhuChart.data.datasets[0].data = suhuData;
+      suhuChart.update('none');
     }
 
     slider.addEventListener('input', updateChartFromSlider);
@@ -158,35 +164,31 @@
       const yyyy = now.getFullYear();
       const mm = String(now.getMonth() + 1).padStart(2, '0');
       const dd = String(now.getDate()).padStart(2, '0');
-      const todayPath = `/history/${yyyy}-${mm}-${dd}`;
+      const path = `/history/${yyyy}-${mm}-${dd}`;
 
-      database.ref(todayPath).once('value', snapshot => {
+      database.ref(path).once('value', snapshot => {
         const data = snapshot.val();
         if (data) {
           const newWaktu = [];
           const newSuhu = [];
-
           Object.keys(data).sort().forEach(jam => {
             if (data[jam].suhu !== undefined) {
               newWaktu.push(jam);
               newSuhu.push(data[jam].suhu);
             }
           });
-
           waktuData = newWaktu;
           suhuData = newSuhu;
 
-          const minSuhu = Math.min(...suhuData);
-          const maxSuhu = Math.max(...suhuData);
-          suhuChart.options.scales.y.min = Math.floor(minSuhu - 1);
-          suhuChart.options.scales.y.max = Math.ceil(maxSuhu + 1);
+          const min = Math.floor(Math.min(...newSuhu) - 1);
+          const max = Math.ceil(Math.max(...newSuhu) + 1);
+          suhuChart.options.scales.y.min = min;
+          suhuChart.options.scales.y.max = max;
 
-          if (!zoomed) {
+          if (!slider.classList.contains('visible')) {
             suhuChart.data.labels = waktuData;
             suhuChart.data.datasets[0].data = suhuData;
             suhuChart.update();
-          } else {
-            showSlider();
           }
         }
       });
