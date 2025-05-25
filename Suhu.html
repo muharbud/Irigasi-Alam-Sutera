@@ -118,7 +118,11 @@
               }
             },
             limits: {
-              x: { minRange: 5 }
+              x: {
+                min: 0,
+                max: () => waktuData.length - 1,
+                minRange: 5
+              }
             }
           }
         },
@@ -184,6 +188,9 @@
           const max = Math.ceil(Math.max(...newSuhu) + 1);
           suhuChart.options.scales.y.min = min;
           suhuChart.options.scales.y.max = max;
+
+          // Update limits dynamically
+          suhuChart.options.plugins.zoom.limits.x.max = waktuData.length - 1;
 
           if (!slider.classList.contains('visible')) {
             suhuChart.data.labels = waktuData;
