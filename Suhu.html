@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <title>Grafik Historis Suhu</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <style>
@@ -67,11 +68,11 @@
           data: suhuData,
           borderColor: 'rgba(255, 99, 132, 1)',
           backgroundColor: 'rgba(255, 99, 132, 0.2)',
-          tension: 0.5, // nilai tension yang lebih tinggi untuk garis yang lebih halus
-          cubicInterpolationMode: 'monotone', // interpolasi cubic monotone
+          tension: 0.5,
+          cubicInterpolationMode: 'monotone',
           fill: true,
-          pointRadius: 0,         // sembunyikan titik data
-          pointHoverRadius: 3     // tampilkan titik saat hover
+          pointRadius: 0,
+          pointHoverRadius: 3
         }]
       },
       options: {
@@ -93,9 +94,25 @@
           tooltip: {
             mode: 'index',
             intersect: false
+          },
+          zoom: {
+            pan: {
+              enabled: true,
+              mode: 'x', // hanya geser ke kiri-kanan
+            },
+            zoom: {
+              wheel: {
+                enabled: true // zoom pakai scroll
+              },
+              pinch: {
+                enabled: true // zoom pakai gesture
+              },
+              mode: 'x' // hanya zoom horizontal
+            }
           }
         }
-      }
+      },
+      plugins: [ChartZoom]
     });
 
     function loadData() {
@@ -118,7 +135,6 @@
             }
           });
 
-          // Hitung min dan max suhu, berikan padding agar sumbu y tidak terlalu rapat
           const minSuhu = Math.min(...newSuhu);
           const maxSuhu = Math.max(...newSuhu);
           const padding = 1;
