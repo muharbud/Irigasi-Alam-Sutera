@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Lamp Control</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      background: #f3f4f6;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    h1 {
+      margin-bottom: 20px;
+      font-weight: 600;
+      color: #111827;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(120px, 160px));
+      gap: 20px;
+    }
+    .btn {
+      padding: 20px;
+      border-radius: 14px;
+      font-size: 1.1rem;
+      border: none;
+      cursor: pointer;
+      background: #e5e7eb;
+      color: #1f2937;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+      transition: all 0.3s ease;
+    }
+    .btn.active {
+      background: #10b981;
+      color: white;
+    }
+    .btn:hover {
+      background: #d1d5db;
+    }
+  </style>
+</head>
+<body>
+  <h1>Smart Lamp Dashboard</h1>
+  <div class="grid">
+    <button id="switchA" class="btn">Lampu A</button>
+    <button id="switchB" class="btn">Lampu B</button>
+    <button id="switchC" class="btn">Lampu C</button>
+    <button id="switchD" class="btn">Lampu D</button>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAmLp85bbiKeVbZJcWCnZKtzVPxMWZ-Q_Y", // Dummy key if not needed
+      databaseURL: "https://the-next-things-default-rtdb.firebaseio.com"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const switches = ['switchA', 'switchB', 'switchC', 'switchD'];
+
+    switches.forEach(id => {
+      const btn = document.getElementById(id);
+
+      db.ref(id).on('value', snap => {
+        const state = snap.val();
+        if (state === 1) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+
+      btn.addEventListener('click', () => {
+        const current = btn.classList.contains('active') ? 1 : 0;
+        const next = current === 1 ? 0 : 1;
+        db.ref(id).set(next);
+      });
+    });
+  </script>
+</body>
+</html>
