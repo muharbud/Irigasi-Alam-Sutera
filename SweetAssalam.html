@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>SweetAssalam — Dashboard (Local)</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root{--bg:#07080b;--card:#0f1720;--muted:#9aa7b2;--neon:#00c0ff;--accent:#1fb6ff;--radius:14px;}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,system-ui,Arial;background:linear-gradient(180deg,var(--bg),#03101a 140%);color:#dfeef8;padding:18px;}
+  header{display:flex;gap:18px;align-items:center;justify-content:space-between;margin-bottom:18px;}
+  h1{font-size:20px;margin:0;letter-spacing:0.2px}
+  .sub{color:var(--muted);font-size:13px}
+  .container{display:grid;grid-template-columns:320px 1fr;gap:18px}
+  @media(max-width:880px){.container{grid-template-columns:1fr}}
+  .card{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.03);padding:16px;border-radius:var(--radius);box-shadow:0 6px 24px rgba(2,6,23,0.6),inset 0 1px 0 rgba(255,255,255,0.02);}
+  .left{display:flex;flex-direction:column;gap:14px;}
+  .led{width:12px;height:12px;border-radius:99px;background:#233244;box-shadow:0 0 8px rgba(0,0,0,0.6);}
+  .led.online{background:linear-gradient(45deg,#10ff9d,#00c0b3);box-shadow:0 0 12px rgba(0,192,191,0.35)}
+  .led.offline{background:linear-gradient(45deg,#ff6b6b,#ff3d3d);box-shadow:0 0 12px rgba(255,59,59,0.25)}
+  .stat-big{font-size:28px;color:var(--neon);font-weight:600}
+  .muted{color:var(--muted);font-size:13px}
+  .controls{display:grid;gap:12px}
+  .control-btn{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-radius:12px;background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.02));border:1px solid rgba(255,255,255,0.03);cursor:pointer;}
+  .control-btn.on{box-shadow:0 8px 30px rgba(0,192,255,0.06);border-color:rgba(0,192,255,0.12);}
+  .control-btn .dot{width:10px;height:10px;border-radius:99px;background:var(--muted)}
+  .control-btn.on .dot{background:var(--neon);box-shadow:0 0 10px rgba(0,192,255,0.3)}
+  .target-inputs{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .input-group{display:flex;flex-direction:column;min-width:80px;}
+  input[type=number]{width:100%;padding:10px 8px;border-radius:10px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:var(--neon);font-weight:700;font-size:16px;text-align:center;}
+  input[type=time]{width:100%;padding:10px 8px;border-radius:10px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:var(--neon);font-weight:700;font-size:16px;text-align:center;}
+  .save-btn{background:linear-gradient(90deg,var(--neon),var(--accent));color:#02121a;border:none;padding:10px 20px;border-radius:10px;cursor:pointer;font-weight:700;min-width:90px;}
+  .save-btn:disabled{opacity:0.4;cursor:not-allowed;}
+  .right{display:flex;flex-direction:column;gap:14px;}
+  .chart-wrapper{position:relative;height:380px;background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.02));border-radius:12px;padding:10px;}
+  .mode-switch{display:flex;align-items:center;gap:12px;margin-bottom:16px;}
+  .switch-label{font-weight:600;font-size:14px;min-width:120px;}
+  .toggle-switch{position:relative;width:50px;height:26px;background:#334455;border-radius:50px;cursor:pointer;transition:0.3s;}
+  .toggle-switch::after{content:"";position:absolute;width:22px;height:22px;background:var(--neon);border-radius:50%;top:2px;left:2px;transition:0.3s;box-shadow:0 0 10px rgba(0,192,255,0.5);}
+  .toggle-switch.on{background:var(--neon);}
+  .toggle-switch.on::after{transform:translateX(24px);}
+  .small-btn{padding:10px 16px;font-size:14px;min-width:auto;}
+  footer{margin-top:14px;color:var(--muted);font-size:13px}
+  .schedule-list{display:flex;flex-direction:column;gap:10px;}
+  .schedule-item{display:flex;align-items:center;gap:10px;padding:10px;background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.02));border:1px solid rgba(255,255,255,0.03);border-radius:10px;}
+  .schedule-item input[type=checkbox]{width:16px;height:16px;}
+  .schedule-item .time-group{flex:1;display:flex;gap:10px;}
+  .schedule-item .time-group .input-group{min-width:120px;}
+  .trash-btn{background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;padding:0;}
+  .trash-btn:hover{color:#ff6b6b;}
+  .add-btn{background:linear-gradient(90deg,var(--neon),var(--accent));color:#02121a;border:none;padding:8px 16px;border-radius:10px;cursor:pointer;font-weight:700;margin-top:10px;}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>Sweet Assalam • Smart Home</h1><div class="sub"> Smart Intelegence Dashboard</div></div>
+  <div class="sub">Muhammad Arif Budiman</div>
+</header>
+<div class="container">
+  <div class="left">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div><div class="muted">Device Status</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+            <div id="led" class="led offline"></div><div id="statusText" class="muted">OFFLINE</div>
+          </div>
+        </div>
+        <div style="text-align:right"><div class="muted">Suhu</div><div id="suhuVal" class="stat-big">0°C</div></div>
+      </div>
+      <hr style="margin:12px 0;border:none;border-top:1px solid rgba(255,255,255,0.02)">
+      <div style="display:flex;justify-content:flex-end;align-items:center">
+        <div><div class="muted">Last update</div><div id="lastUpdate" class="muted">--:--:--</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-weight:700">Status</div><div id="modeBadge" class="muted">MANUAL</div>
+      </div>
+      <div class="controls">
+        <div id="btnKipas" class="control-btn"><div><div class="name">Kipas</div><div class="muted">Kontrol kipas</div></div>
+          <div style="display:flex;gap:8px;align-items:center"><div class="dot"></div><div class="state" id="stateKipas">OFF</div></div>
+        </div>
+        <div id="btnLampu" class="control-btn"><div><div class="name">Lampu</div><div class="muted">Kontrol lampu</div></div>
+          <div style="display:flex;gap:8px;align-items:center"><div class="dot"></div><div class="state" id="stateLampu">OFF</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="font-weight:700">Target Suhu</div><div class="muted">Kipas Exhaust</div>
+      </div>
+      <div class="target-inputs">
+        <div class="input-group"><div class="muted" style="margin-bottom:4px">ON ≥</div><input id="fanOn" type="number" min="0" placeholder="39" /></div>
+        <div class="input-group"><div class="muted" style="margin-bottom:4px">OFF ≤</div><input id="fanOff" type="number" min="0" placeholder="25" /></div>
+        <div style="display:flex;align-items:end"><button class="save-btn" id="saveTargets">SIMPAN</button></div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="font-weight:700">Jadwal Kipas</div><div class="muted">Atur jadwal ON/OFF</div>
+      </div>
+      <div id="scheduleList" class="schedule-list"></div>
+      <button id="addSchedule" class="add-btn">+</button>
+    </div>
+  </div>
+  <div class="right">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font-weight:700">Grafik Suhu 24 Jam Terakhir</div><div class="muted">Data otomatis terhapus setelah 24 jam</div>
+      </div>
+      <div class="chart-wrapper"><canvas id="chartSuhu"></canvas></div>
+    </div>
+    <div class="card">
+      <div style="font-weight:700;margin-bottom:16px">KONTROL PANEL</div>
+      <div class="mode-switch">
+        <div id="modeText" class="switch-label">MODE MANUAL</div>
+        <div id="autoSwitch" class="toggle-switch" onclick="toggleMode()"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <button id="btnToggleLampu" class="save-btn small-btn" onclick="toggleDevice('lampu')">Lampu</button>
+        <button id="btnToggleKipas" class="save-btn small-btn" onclick="toggleDevice('kipas')">Kipas</button>
+      </div>
+    </div>
+    <footer class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div class="muted">Firebase Realtime — Local host</div>
+        <div class="muted">Built for: SweetAssalam</div>
+      </div>
+    </footer>
+  </div>
+</div>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getDatabase, ref, onValue, set, get, push, query, orderByChild, startAt, endAt, remove, onChildAdded, onChildRemoved, onChildChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+  const firebaseConfig = {
+    apiKey: "AIzaSyDXQZ_n3qP8boIQSN-0bcAxJeF_BSSBqEc",
+    authDomain: "the-next-things.firebaseapp.com",
+    databaseURL: "https://the-next-things-default-rtdb.firebaseio.com",
+    projectId: "the-next-things",
+    storageBucket: "the-next-things.firebasestorage.app",
+    messagingSenderId: "1035495054449",
+    appId: "1:1035495054449:web:af9cadcccd5ea632cd8fd0"
+  };
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const base = "SweetAssalam";
+  const refs = {
+    status: ref(db, `${base}/status`),
+    suhu: ref(db, `${base}/suhu`),
+    kipas: ref(db, `${base}/kipas`),
+    lampu: ref(db, `${base}/lampu`),
+    kontrol: ref(db, `${base}/kontrol`),
+    tOn: ref(db, `${base}/targetFanON`),
+    tOff: ref(db, `${base}/targetFanOFF`),
+    chartData: ref(db, `${base}/chartData`),
+    fanSchedules: ref(db, `${base}/fanSchedules`) // Node baru untuk jadwal kipas
+  };
+  const elements = {
+    led: document.getElementById("led"),
+    statusText: document.getElementById("statusText"),
+    suhuVal: document.getElementById("suhuVal"),
+    lastUpdate: document.getElementById("lastUpdate"),
+    stateKipas: document.getElementById("stateKipas"),
+    stateLampu: document.getElementById("stateLampu"),
+    modeBadge: document.getElementById("modeBadge"),
+    autoSwitch: document.getElementById("autoSwitch"),
+    modeText: document.getElementById("modeText"),
+    btnToggleLampu: document.getElementById("btnToggleLampu"),
+    btnToggleKipas: document.getElementById("btnToggleKipas"),
+    scheduleList: document.getElementById("scheduleList"),
+    addSchedule: document.getElementById("addSchedule")
+  };
+  // === GRAFIK SUHU 24 JAM PADA FIREBASE ===
+  const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000; // 24 jam
+  const ctx = document.getElementById("chartSuhu").getContext("2d");
+  const labels = [];
+  const dataPoints = [];
+  const chart = new Chart(ctx, {
+    type: "line",
+    data: { labels, datasets: [{ label: "Suhu (°C)", data: dataPoints, tension: 0.25, borderColor: "rgba(0,192,255,0.95)", borderWidth: 2, pointRadius: 2, fill: true, backgroundColor: "rgba(0,192,255,0.08)" }] },
+    options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { color: "#9fb8c7" } }, y: { ticks: { color: "#9fb8c7" } } }, plugins: { legend: { labels: { color: "#cfeefb" } } } }
+  });
+  // Load data dari Firebase (data 24 jam terakhir)
+  async function loadChartData() {
+    const now = Date.now();
+    const startTime = now - TWENTY_FOUR_HOURS;
+    const q = query(refs.chartData, orderByChild("time"), startAt(startTime));
+    const snap = await get(q);
+    labels.length = 0;
+    dataPoints.length = 0;
+    if (snap.exists()) {
+      snap.forEach(child => {
+        const data = child.val();
+        labels.push(new Date(data.time).toLocaleTimeString());
+        dataPoints.push(data.value);
+      });
+      chart.update();
+    }
+  }
+  // Push data baru ke Firebase & hapus data lama
+  async function pushChart(val) {
+    const timestamp = Date.now();
+    const timeStr = new Date(timestamp).toLocaleTimeString();
+    // Push ke Firebase
+    const newRef = push(refs.chartData);
+    await set(newRef, { time: timestamp, value: Number(val) });
+    // Hapus data lebih tua dari 24 jam
+    const startTime = timestamp - TWENTY_FOUR_HOURS;
+    const oldDataQuery = query(refs.chartData, orderByChild("time"), endAt(startTime));
+    const oldSnap = await get(oldDataQuery);
+    if (oldSnap.exists()) {
+      oldSnap.forEach(child => remove(ref(db, `${base}/chartData/${child.key}`)));
+    }
+    // Update grafik
+    labels.push(timeStr);
+    dataPoints.push(Number(val));
+    chart.update();
+  }
+  // Load data awal
+  loadChartData();
+  // === FIREBASE LISTENERS ===
+  onValue(refs.status, snap => {
+    const v = snap.val() || "OFFLINE";
+    elements.led.className = v === "ONLINE" ? "led online" : "led offline";
+    elements.statusText.textContent = v;
+  });
+  onValue(refs.suhu, snap => {
+    const v = Number(snap.val() ?? 0).toFixed(1);
+    elements.suhuVal.textContent = v + "°C";
+    elements.lastUpdate.textContent = new Date().toLocaleTimeString();
+    pushChart(v); // Ini yang menyimpan ke Firebase
+  });
+  onValue(refs.kipas, snap => {
+    const v = snap.val() ? 1 : 0;
+    elements.stateKipas.textContent = v ? "ON" : "OFF";
+    document.getElementById("btnKipas").classList.toggle("on", v === 1);
+  });
+  onValue(refs.lampu, snap => {
+    const v = snap.val() ? 1 : 0;
+    elements.stateLampu.textContent = v ? "ON" : "OFF";
+    document.getElementById("btnLampu").classList.toggle("on", v === 1);
+  });
+  onValue(refs.kontrol, snap => {
+    const isAuto = snap.val() ? 1 : 0;
+    elements.modeBadge.textContent = isAuto ? "OTOMATIS" : "MANUAL";
+    elements.autoSwitch.classList.toggle("on", isAuto);
+    elements.modeText.textContent = isAuto ? "MODE OTOMATIS" : "MODE MANUAL";
+    elements.btnToggleLampu.disabled = isAuto;
+    elements.btnToggleKipas.disabled = isAuto;
+  });
+  onValue(refs.tOn, snap => document.getElementById("fanOn").value = snap.val() ?? "");
+  onValue(refs.tOff, snap => document.getElementById("fanOff").value = snap.val() ?? "");
+  window.toggleMode = async () => {
+    const current = (await get(refs.kontrol)).val() ? 1 : 0;
+    await set(refs.kontrol, current ? 0 : 1);
+  };
+  window.toggleDevice = async (device) => {
+    const r = ref(db, `${base}/${device}`);
+    const v = (await get(r)).val() ? 1 : 0;
+    await set(r, v ? 0 : 1);
+  };
+  document.getElementById("saveTargets").onclick = async () => {
+    const on = Number(document.getElementById("fanOn").value);
+    const off = Number(document.getElementById("fanOff").value);
+    if (!isNaN(on) && !isNaN(off)) {
+      await set(refs.tOn, on);
+      await set(refs.tOff, off);
+      alert("Target suhu berhasil disimpan!");
+    } else {
+      alert("Masukkan angka yang valid!");
+    }
+  };
+  // Update grafik real-time dari Firebase (jika ada perubahan dari device lain)
+  onValue(refs.chartData, () => loadChartData()); // Reload grafik saat data Firebase berubah
+
+  // === FUNGSI JADWAL KIPAS ===
+  function timeToMinutes(time) {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
+  }
+
+  function validateTimes(onTime, offTime) {
+    const onMin = timeToMinutes(onTime);
+    const offMin = timeToMinutes(offTime);
+    return offMin >= onMin + 1;
+  }
+
+  async function addSchedule() {
+    const newRef = push(refs.fanSchedules);
+    await set(newRef, { on: "00:00", off: "00:01", enabled: false });
+  }
+
+  function renderSchedule(key, data) {
+    const item = document.createElement('div');
+    item.className = 'schedule-item';
+    item.dataset.key = key;
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = data.enabled;
+    checkbox.onchange = async () => {
+      await set(ref(db, `${base}/fanSchedules/${key}/enabled`), checkbox.checked);
+    };
+
+    const timeGroup = document.createElement('div');
+    timeGroup.className = 'time-group';
+
+    const onGroup = document.createElement('div');
+    onGroup.className = 'input-group';
+    onGroup.innerHTML = '<div class="muted" style="margin-bottom:4px">ON</div>';
+    const onInput = document.createElement('input');
+    onInput.type = 'time';
+    onInput.value = data.on;
+    onInput.onblur = async () => {
+      if (validateTimes(onInput.value, offInput.value)) {
+        await set(ref(db, `${base}/fanSchedules/${key}/on`), onInput.value);
+      } else {
+        alert("Jam OFF harus minimal 1 menit setelah jam ON!");
+        onInput.value = data.on; // Reset
+      }
+    };
+    onGroup.appendChild(onInput);
+
+    const offGroup = document.createElement('div');
+    offGroup.className = 'input-group';
+    offGroup.innerHTML = '<div class="muted" style="margin-bottom:4px">OFF</div>';
+    const offInput = document.createElement('input');
+    offInput.type = 'time';
+    offInput.value = data.off;
+    offInput.onblur = async () => {
+      if (validateTimes(onInput.value, offInput.value)) {
+        await set(ref(db, `${base}/fanSchedules/${key}/off`), offInput.value);
+      } else {
+        alert("Jam OFF harus minimal 1 menit setelah jam ON!");
+        offInput.value = data.off; // Reset
+      }
+    };
+    offGroup.appendChild(offInput);
+
+    timeGroup.appendChild(onGroup);
+    timeGroup.appendChild(offGroup);
+
+    const trashBtn = document.createElement('button');
+    trashBtn.className = 'trash-btn';
+    trashBtn.innerHTML = '🗑';
+    trashBtn.onclick = async () => {
+      await remove(ref(db, `${base}/fanSchedules/${key}`));
+    };
+
+    item.appendChild(checkbox);
+    item.appendChild(timeGroup);
+    item.appendChild(trashBtn);
+
+    elements.scheduleList.appendChild(item);
+  }
+
+  // Load dan render jadwal
+  onChildAdded(refs.fanSchedules, snap => {
+    renderSchedule(snap.key, snap.val());
+  });
+
+  onChildChanged(refs.fanSchedules, snap => {
+    const item = elements.scheduleList.querySelector(`[data-key="${snap.key}"]`);
+    if (item) {
+      const checkbox = item.querySelector('input[type="checkbox"]');
+      const onInput = item.querySelectorAll('input[type="time"]')[0];
+      const offInput = item.querySelectorAll('input[type="time"]')[1];
+      checkbox.checked = snap.val().enabled;
+      onInput.value = snap.val().on;
+      offInput.value = snap.val().off;
+    }
+  });
+
+  onChildRemoved(refs.fanSchedules, snap => {
+    const item = elements.scheduleList.querySelector(`[data-key="${snap.key}"]`);
+    if (item) item.remove();
+  });
+
+  elements.addSchedule.onclick = addSchedule;
+
+  // === LOGIKA OTOMATIS UNTUK KIPAS ===
+  async function checkAutoMode() {
+    const isAutoSnap = await get(refs.kontrol);
+    const isAuto = isAutoSnap.val() ? 1 : 0;
+    if (!isAuto) return;
+
+    const currentTime = new Date();
+    const currentMin = currentTime.getHours() * 60 + currentTime.getMinutes();
+
+    const suhuSnap = await get(refs.suhu);
+    const suhu = Number(suhuSnap.val() ?? 0);
+
+    const tOnSnap = await get(refs.tOn);
+    const tOn = Number(tOnSnap.val() ?? 39);
+
+    const tOffSnap = await get(refs.tOff);
+    const tOff = Number(tOffSnap.val() ?? 25);
+
+    let useSchedule = false;
+    let shouldOn = false;
+
+    const schedulesSnap = await get(refs.fanSchedules);
+    if (schedulesSnap.exists()) {
+      schedulesSnap.forEach(child => {
+        const s = child.val();
+        if (s.enabled) {
+          useSchedule = true;
+          const onMin = timeToMinutes(s.on);
+          const offMin = timeToMinutes(s.off);
+          if (currentMin >= onMin && currentMin < offMin) {
+            shouldOn = true;
+          }
+        }
+      });
+    }
+
+    let newKipas;
+    if (useSchedule) {
+      newKipas = shouldOn ? 1 : 0;
+    } else {
+      const currentKipasSnap = await get(refs.kipas);
+      const currentKipas = currentKipasSnap.val() ? 1 : 0;
+      if (suhu >= tOn) {
+        newKipas = 1;
+      } else if (suhu <= tOff) {
+        newKipas = 0;
+      } else {
+        newKipas = currentKipas; // Hysteresis: keep current state
+      }
+    }
+
+    const currentKipasSnap = await get(refs.kipas);
+    const currentKipas = currentKipasSnap.val() ? 1 : 0;
+    if (newKipas !== currentKipas) {
+      await set(refs.kipas, newKipas);
+    }
+  }
+
+  // Jalankan check setiap 60 detik
+  setInterval(checkAutoMode, 60000);
+  // Jalankan sekali saat load
+  checkAutoMode();
+</script>
+</body>
+</html>
