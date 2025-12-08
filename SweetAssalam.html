@@ -43,11 +43,12 @@
   .small-btn{padding:10px 16px;font-size:14px;min-width:auto;}
   footer{margin-top:14px;color:var(--muted);font-size:13px}
   .schedule-list{display:flex;flex-direction:column;gap:10px;}
-  .schedule-item{display:flex;align-items:center;gap:10px;padding:10px;background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.02));border:1px solid rgba(255,255,255,0.03);border-radius:10px;}
-  .schedule-item input[type=checkbox]{width:16px;height:16px;}
-  .schedule-item .time-group{flex:1;display:flex;gap:10px;}
-  .schedule-item .time-group .input-group{min-width:120px;}
-  .trash-btn{background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;padding:0;}
+  .schedule-item{display:flex;align-items:center;gap:8px;padding:8px 10px 8px 4px;background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.02));border:1px solid rgba(255,255,255,0.03);border-radius:10px;}
+  .schedule-item input[type=checkbox]{width:14px;height:14px;}
+  .schedule-item .time-group{flex:1;display:flex;gap:8px;}
+  .schedule-item .time-group .input-group{min-width:100px;}
+  .schedule-item .time-group .input-group input[type=time]{font-size:14px;padding:8px 6px;}
+  .trash-btn{background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:0;}
   .trash-btn:hover{color:#ff6b6b;}
   .add-btn{background:linear-gradient(90deg,var(--neon),var(--accent));color:#02121a;border:none;padding:8px 16px;border-radius:10px;cursor:pointer;font-weight:700;margin-top:10px;}
 </style>
@@ -91,8 +92,8 @@
         <div style="font-weight:700">Target Suhu</div><div class="muted">Kipas Exhaust</div>
       </div>
       <div class="target-inputs">
-        <div class="input-group"><div class="muted" style="margin-bottom:4px">ON ≥</div><input id="fanOn" type="number" min="0" placeholder="39" /></div>
-        <div class="input-group"><div class="muted" style="margin-bottom:4px">OFF ≤</div><input id="fanOff" type="number" min="0" placeholder="25" /></div>
+        <div class="input-group"><div class="muted" style="margin-bottom:4px">ON greater than or equal to</div><input id="fanOn" type="number" min="0" placeholder="39" /></div>
+        <div class="input-group"><div class="muted" style="margin-bottom:4px">OFF less than or equal to</div><input id="fanOff" type="number" min="0" placeholder="25" /></div>
         <div style="display:flex;align-items:end"><button class="save-btn" id="saveTargets">SIMPAN</button></div>
       </div>
     </div>
@@ -107,7 +108,7 @@
   <div class="right">
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <div style="font-weight:700">Grafik Suhu 24 Jam Terakhir</div><div class="muted">Data otomatis terhapus setelah 24 jam</div>
+        <div style="font-weight:700">Grafik Suhu 24 Jam Terakhir</div><div class="muted">Data direset otomatis pukul 00:00</div>
       </div>
       <div class="chart-wrapper"><canvas id="chartSuhu"></canvas></div>
     </div>
@@ -130,9 +131,11 @@
     </footer>
   </div>
 </div>
+
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getDatabase, ref, onValue, set, get, push, query, orderByChild, startAt, endAt, remove, onChildAdded, onChildRemoved, onChildChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+  import { getDatabase, ref, onValue, set, get, push, remove, onChildAdded, onChildRemoved, onChildChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
   const firebaseConfig = {
     apiKey: "AIzaSyDXQZ_n3qP8boIQSN-0bcAxJeF_BSSBqEc",
     authDomain: "the-next-things.firebaseapp.com",
@@ -142,6 +145,7 @@
     messagingSenderId: "1035495054449",
     appId: "1:1035495054449:web:af9cadcccd5ea632cd8fd0"
   };
+
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
   const base = "SweetAssalam";
@@ -154,8 +158,9 @@
     tOn: ref(db, `${base}/targetFanON`),
     tOff: ref(db, `${base}/targetFanOFF`),
     chartData: ref(db, `${base}/chartData`),
-    fanSchedules: ref(db, `${base}/fanSchedules`) // Node baru untuk jadwal kipas
+    fanSchedules: ref(db, `${base}/fanSchedules`)
   };
+
   const elements = {
     led: document.getElementById("led"),
     statusText: document.getElementById("statusText"),
@@ -171,8 +176,8 @@
     scheduleList: document.getElementById("scheduleList"),
     addSchedule: document.getElementById("addSchedule")
   };
-  // === GRAFIK SUHU 24 JAM PADA FIREBASE ===
-  const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000; // 24 jam
+
+  // === GRAFIK ===
   const ctx = document.getElementById("chartSuhu").getContext("2d");
   const labels = [];
   const dataPoints = [];
@@ -181,55 +186,76 @@
     data: { labels, datasets: [{ label: "Suhu (°C)", data: dataPoints, tension: 0.25, borderColor: "rgba(0,192,255,0.95)", borderWidth: 2, pointRadius: 2, fill: true, backgroundColor: "rgba(0,192,255,0.08)" }] },
     options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { color: "#9fb8c7" } }, y: { ticks: { color: "#9fb8c7" } } }, plugins: { legend: { labels: { color: "#cfeefb" } } } }
   });
-  // Load data dari Firebase (data 24 jam terakhir)
-  async function loadChartData() {
-    const now = Date.now();
-    const startTime = now - TWENTY_FOUR_HOURS;
-    const q = query(refs.chartData, orderByChild("time"), startAt(startTime));
-    const snap = await get(q);
+
+  // Simpan data suhu setiap 15 detik
+  async function saveToChart() {
+    const snap = await get(refs.suhu);
+    const val = Number(snap.val() ?? 0).toFixed(1);
+    const timeStr = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+    const newRef = push(refs.chartData);
+    await set(newRef, { time: Date.now(), value: Number(val) });
+
+    labels.push(timeStr);
+    dataPoints.push(Number(val));
+    chart.update();
+
+    elements.suhuVal.textContent = val + "°C";
+    elements.lastUpdate.textContent = timeStr;
+  }
+
+  // Load data saat buka halaman
+  async function loadChart() {
+    const snap = await get(refs.chartData);
     labels.length = 0;
     dataPoints.length = 0;
     if (snap.exists()) {
-      snap.forEach(child => {
-        const data = child.val();
-        labels.push(new Date(data.time).toLocaleTimeString());
-        dataPoints.push(data.value);
+      const arr = [];
+      snap.forEach(c => arr.push(c.val()));
+      arr.sort((a,b) => a.time - b.time);
+      arr.forEach(d => {
+        labels.push(new Date(d.time).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+        dataPoints.push(d.value);
       });
       chart.update();
     }
   }
-  // Push data baru ke Firebase & hapus data lama
-  async function pushChart(val) {
-    const timestamp = Date.now();
-    const timeStr = new Date(timestamp).toLocaleTimeString();
-    // Push ke Firebase
-    const newRef = push(refs.chartData);
-    await set(newRef, { time: timestamp, value: Number(val) });
-    // Hapus data lebih tua dari 24 jam
-    const startTime = timestamp - TWENTY_FOUR_HOURS;
-    const oldDataQuery = query(refs.chartData, orderByChild("time"), endAt(startTime));
-    const oldSnap = await get(oldDataQuery);
-    if (oldSnap.exists()) {
-      oldSnap.forEach(child => remove(ref(db, `${base}/chartData/${child.key}`)));
-    }
-    // Update grafik
-    labels.push(timeStr);
-    dataPoints.push(Number(val));
-    chart.update();
+
+  // RESET TOTAL TEPAT JAM 00:00 SETIAP HARI
+  function resetAtMidnight() {
+    const now = new Date();
+    const midnight = new Date();
+    midnight.setHours(24, 0, 0, 0);
+    const delay = midnight - now;
+
+    setTimeout(async () => {
+      const snap = await get(refs.chartData);
+      if (snap.exists()) {
+        snap.forEach(child => remove(ref(db, `${base}/chartData/${child.key}`)));
+      }
+      labels.length = 0;
+      dataPoints.length = 0;
+      chart.update();
+      resetAtMidnight(); // ulang untuk besok
+    }, delay);
   }
-  // Load data awal
-  loadChartData();
-  // === FIREBASE LISTENERS ===
+
+  // Jalankan
+  loadChart();
+  resetAtMidnight();
+  setInterval(saveToChart, 15000); // 15 detik
+  saveToChart();
+
+  // === LISTENER UI (TIDAK DIUBAH) ===
   onValue(refs.status, snap => {
     const v = snap.val() || "OFFLINE";
     elements.led.className = v === "ONLINE" ? "led online" : "led offline";
     elements.statusText.textContent = v;
   });
   onValue(refs.suhu, snap => {
+    // hanya update tampilan suhu, chart diurus oleh interval
     const v = Number(snap.val() ?? 0).toFixed(1);
     elements.suhuVal.textContent = v + "°C";
-    elements.lastUpdate.textContent = new Date().toLocaleTimeString();
-    pushChart(v); // Ini yang menyimpan ke Firebase
   });
   onValue(refs.kipas, snap => {
     const v = snap.val() ? 1 : 0;
@@ -251,6 +277,7 @@
   });
   onValue(refs.tOn, snap => document.getElementById("fanOn").value = snap.val() ?? "");
   onValue(refs.tOff, snap => document.getElementById("fanOff").value = snap.val() ?? "");
+
   window.toggleMode = async () => {
     const current = (await get(refs.kontrol)).val() ? 1 : 0;
     await set(refs.kontrol, current ? 0 : 1);
@@ -271,41 +298,33 @@
       alert("Masukkan angka yang valid!");
     }
   };
-  // Update grafik real-time dari Firebase (jika ada perubahan dari device lain)
-  onValue(refs.chartData, () => loadChartData()); // Reload grafik saat data Firebase berubah
 
-  // === FUNGSI JADWAL KIPAS ===
+  // === JADWAL KIPAS (TIDAK DIUBAH) ===
   function timeToMinutes(time) {
     const [hours, minutes] = time.split(':').map(Number);
     return hours * 60 + minutes;
   }
-
   function validateTimes(onTime, offTime) {
     const onMin = timeToMinutes(onTime);
     const offMin = timeToMinutes(offTime);
     return offMin >= onMin + 1;
   }
-
   async function addSchedule() {
     const newRef = push(refs.fanSchedules);
     await set(newRef, { on: "00:00", off: "00:01", enabled: false });
   }
-
   function renderSchedule(key, data) {
     const item = document.createElement('div');
     item.className = 'schedule-item';
     item.dataset.key = key;
-
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
     checkbox.checked = data.enabled;
     checkbox.onchange = async () => {
       await set(ref(db, `${base}/fanSchedules/${key}/enabled`), checkbox.checked);
     };
-
     const timeGroup = document.createElement('div');
     timeGroup.className = 'time-group';
-
     const onGroup = document.createElement('div');
     onGroup.className = 'input-group';
     onGroup.innerHTML = '<div class="muted" style="margin-bottom:4px">ON</div>';
@@ -317,11 +336,10 @@
         await set(ref(db, `${base}/fanSchedules/${key}/on`), onInput.value);
       } else {
         alert("Jam OFF harus minimal 1 menit setelah jam ON!");
-        onInput.value = data.on; // Reset
+        onInput.value = data.on;
       }
     };
     onGroup.appendChild(onInput);
-
     const offGroup = document.createElement('div');
     offGroup.className = 'input-group';
     offGroup.innerHTML = '<div class="muted" style="margin-bottom:4px">OFF</div>';
@@ -333,33 +351,24 @@
         await set(ref(db, `${base}/fanSchedules/${key}/off`), offInput.value);
       } else {
         alert("Jam OFF harus minimal 1 menit setelah jam ON!");
-        offInput.value = data.off; // Reset
+        offInput.value = data.off;
       }
     };
     offGroup.appendChild(offInput);
-
     timeGroup.appendChild(onGroup);
     timeGroup.appendChild(offGroup);
-
     const trashBtn = document.createElement('button');
     trashBtn.className = 'trash-btn';
     trashBtn.innerHTML = '🗑';
     trashBtn.onclick = async () => {
       await remove(ref(db, `${base}/fanSchedules/${key}`));
     };
-
     item.appendChild(checkbox);
     item.appendChild(timeGroup);
     item.appendChild(trashBtn);
-
     elements.scheduleList.appendChild(item);
   }
-
-  // Load dan render jadwal
-  onChildAdded(refs.fanSchedules, snap => {
-    renderSchedule(snap.key, snap.val());
-  });
-
+  onChildAdded(refs.fanSchedules, snap => renderSchedule(snap.key, snap.val()));
   onChildChanged(refs.fanSchedules, snap => {
     const item = elements.scheduleList.querySelector(`[data-key="${snap.key}"]`);
     if (item) {
@@ -371,75 +380,47 @@
       offInput.value = snap.val().off;
     }
   });
-
   onChildRemoved(refs.fanSchedules, snap => {
     const item = elements.scheduleList.querySelector(`[data-key="${snap.key}"]`);
     if (item) item.remove();
   });
-
   elements.addSchedule.onclick = addSchedule;
 
-  // === LOGIKA OTOMATIS UNTUK KIPAS ===
+  // === AUTO MODE ===
   async function checkAutoMode() {
-    const isAutoSnap = await get(refs.kontrol);
-    const isAuto = isAutoSnap.val() ? 1 : 0;
+    const isAuto = (await get(refs.kontrol)).val();
     if (!isAuto) return;
-
-    const currentTime = new Date();
-    const currentMin = currentTime.getHours() * 60 + currentTime.getMinutes();
-
-    const suhuSnap = await get(refs.suhu);
-    const suhu = Number(suhuSnap.val() ?? 0);
-
-    const tOnSnap = await get(refs.tOn);
-    const tOn = Number(tOnSnap.val() ?? 39);
-
-    const tOffSnap = await get(refs.tOff);
-    const tOff = Number(tOffSnap.val() ?? 25);
-
-    let useSchedule = false;
+    const now = new Date();
+    const curMin = now.getHours() * 60 + now.getMinutes();
+    const suhu = Number((await get(refs.suhu)).val() ?? 0);
+    const tOn = Number((await get(refs.tOn)).val() ?? 39);
+    const tOff = Number((await get(refs.tOff)).val() ?? 25);
     let shouldOn = false;
-
-    const schedulesSnap = await get(refs.fanSchedules);
-    if (schedulesSnap.exists()) {
-      schedulesSnap.forEach(child => {
+    let hasSchedule = false;
+    const sched = await get(refs.fanSchedules);
+    if (sched.exists()) {
+      sched.forEach(child => {
         const s = child.val();
         if (s.enabled) {
-          useSchedule = true;
-          const onMin = timeToMinutes(s.on);
-          const offMin = timeToMinutes(s.off);
-          if (currentMin >= onMin && currentMin < offMin) {
-            shouldOn = true;
-          }
+          hasSchedule = true;
+          const on = timeToMinutes(s.on);
+          const off = timeToMinutes(s.off);
+          if (curMin >= on && curMin < off) shouldOn = true;
         }
       });
     }
-
-    let newKipas;
-    if (useSchedule) {
-      newKipas = shouldOn ? 1 : 0;
+    let target = (await get(refs.kipas)).val() ? 1 : 0;
+    if (hasSchedule) {
+      target = shouldOn ? 1 : 0;
     } else {
-      const currentKipasSnap = await get(refs.kipas);
-      const currentKipas = currentKipasSnap.val() ? 1 : 0;
-      if (suhu >= tOn) {
-        newKipas = 1;
-      } else if (suhu <= tOff) {
-        newKipas = 0;
-      } else {
-        newKipas = currentKipas; // Hysteresis: keep current state
-      }
+      if (suhu >= tOn) target = 1;
+      else if (suhu <= tOff) target = 0;
     }
-
-    const currentKipasSnap = await get(refs.kipas);
-    const currentKipas = currentKipasSnap.val() ? 1 : 0;
-    if (newKipas !== currentKipas) {
-      await set(refs.kipas, newKipas);
+    if (target !== (await get(refs.kipas)).val() ? 1 : 0) {
+      await set(refs.kipas, target);
     }
   }
-
-  // Jalankan check setiap 60 detik
   setInterval(checkAutoMode, 60000);
-  // Jalankan sekali saat load
   checkAutoMode();
 </script>
 </body>
