@@ -60,14 +60,11 @@
 </header>
 <div class="container">
   <div class="left">
-    <!-- CARD DEVICE STATUS – PERSIS SESUAI PERMINTAAN ANDA -->
     <div class="card">
-      <!-- Baris 1: Device Status + Last update -->
       <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:8px">
         <div class="muted" style="font-weight:600">Device Status</div>
         <div class="muted" style="font-weight:600">Update Terakhir</div>
       </div>
-      <!-- Baris 2: ONLINE + waktu -->
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
         <div style="display:flex;align-items:center;gap:8px">
           <div id="led" class="led offline"></div>
@@ -75,7 +72,6 @@
         </div>
         <div id="lastUpdate" style="font-size:15px;color:var(--neon)">--:--:--</div>
       </div>
-      <!-- Baris 3: Suhu + Kelembaban -->
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div>
           <div class="muted">Suhu</div>
@@ -83,13 +79,11 @@
         </div>
         <div style="text-align:right">
           <div class="muted">Kelembaban</div>
-          <div id="lembabVal" class="stat-big" style="color:#10ff9d">0%</div> <!-- WARNA HIJAU TERANG -->
+          <div id="lembabVal" class="stat-big" style="color:#10ff9d">0%</div>
         </div>
       </div>
       <hr style="margin:16px 0 0 0;border:none;border-top:1px solid rgba(255,255,255,0.02)">
     </div>
-    <!-- AKHIR CARD DEVICE STATUS -->
-    <!-- SEMUA CARD LAIN TIDAK DIUBAH -->
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
         <div style="font-weight:700">Status</div><div id="modeBadge" class="muted">MANUAL</div>
@@ -152,7 +146,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
   import { getDatabase, ref, onValue, set, get, push, remove, onChildAdded, onChildRemoved, onChildChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
+  
   const firebaseConfig = {
     apiKey: "AIzaSyDXQZ_n3qP8boIQSN-0bcAxJeF_BSSBqEc",
     authDomain: "the-next-things.firebaseapp.com",
@@ -162,7 +156,7 @@
     messagingSenderId: "1035495054449",
     appId: "1:1035495054449:web:af9cadcccd5ea632cd8fd0"
   };
-
+  
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
   const base = "SweetAssalam";
@@ -178,7 +172,7 @@
     chartData: ref(db, `${base}/chartData`),
     fanSchedules: ref(db, `${base}/fanSchedules`)
   };
-
+  
   const elements = {
     led: document.getElementById("led"),
     statusText: document.getElementById("statusText"),
@@ -208,20 +202,17 @@
   updateTanggal();
   setInterval(updateTanggal, 86400000);
 
-  // === GRAFIK SUHU + KELEMBABAN (GARIS KELEMBABAN WARNA HIJAU TERANG) ===
+  // === GRAFIK SUHU + KELEMBABAN ===
   const ctx = document.getElementById("chartSuhu").getContext("2d");
   const labels = [];
   const suhuData = [];
   const lembabData = [];
   const chart = new Chart(ctx, {
     type: "line",
-    data: {
-      labels,
-      datasets: [
-        { label: "Suhu (°C)", data: suhuData, tension: 0.25, borderColor: "#00c0ff", backgroundColor: "rgba(0,192,255,0.1)", fill: true, yAxisID: 'y' },
-        { label: "Kelembaban (%)", data: lembabData, tension: 0.25, borderColor: "#10ff9d", backgroundColor: "rgba(255,107,107,0.1)", fill: true, yAxisID: 'y1' } // GARIS KELEMBABAN HIJAU TERANG
-      ]
-    },
+    data: { labels, datasets: [
+      { label: "Suhu (°C)", data: suhuData, tension: 0.25, borderColor: "#00c0ff", backgroundColor: "rgba(0,192,255,0.1)", fill: true, yAxisID: 'y' },
+      { label: "Kelembaban (%)", data: lembabData, tension: 0.25, borderColor: "#10ff9d", backgroundColor: "rgba(16,255,157,0.1)", fill: true, yAxisID: 'y1' }
+    ]},
     options: {
       responsive: true,
       maintainAspectRatio: false,
@@ -233,7 +224,6 @@
     }
   });
 
-  // Semua fungsi lainnya tetap 100% sama
   async function saveToChart() {
     const snapSuhu = await get(refs.suhu);
     const snapLembab = await get(refs.kelembaban);
@@ -250,13 +240,25 @@
     elements.lembabVal.textContent = lembab + "%";
     elements.lastUpdate.textContent = timeStr;
   }
+
+  // PERBAIKAN UTAMA: Hanya ambil data dari jam 00:00 hari ini
   async function loadChart() {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayStartTimestamp = todayStart.getTime();
+
     const snap = await get(refs.chartData);
     labels.length = 0; suhuData.length = 0; lembabData.length = 0;
+
     if (snap.exists()) {
       const arr = [];
-      snap.forEach(c => arr.push(c.val()));
-      arr.sort((a,b) => a.time - b.time);
+      snap.forEach(child => {
+        const data = child.val();
+        if (data.time >= todayStartTimestamp) {
+          arr.push(data);
+        }
+      });
+      arr.sort((a, b) => a.time - b.time);
       arr.forEach(d => {
         labels.push(new Date(d.time).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
         suhuData.push(d.suhu ?? 0);
@@ -265,11 +267,14 @@
       chart.update();
     }
   }
+
+  // Reset tepat jam 00:00 besok
   function resetAtMidnight() {
     const now = new Date();
-    const midnight = new Date();
+    const midnight = new Date(now);
     midnight.setHours(24, 0, 0, 0);
     const delay = midnight - now;
+
     setTimeout(async () => {
       const snap = await get(refs.chartData);
       if (snap.exists()) {
@@ -281,11 +286,13 @@
       resetAtMidnight();
     }, delay);
   }
+
   loadChart();
   resetAtMidnight();
   setInterval(saveToChart, 15000);
   saveToChart();
-  // === LISTENER UI ===
+
+  // Listener UI tetap sama
   onValue(refs.status, snap => {
     const v = snap.val() || "OFFLINE";
     elements.led.className = v === "ONLINE" ? "led online" : "led offline";
@@ -339,7 +346,8 @@
       alert("Masukkan angka yang valid!");
     }
   };
-  // === JADWAL KIPAS ===
+
+  // JADWAL KIPAS & AUTO MODE TETAP SAMA
   function timeToMinutes(time) {
     const [h, m] = time.split(':').map(Number);
     return h * 60 + m;
@@ -397,7 +405,7 @@
     timeGroup.appendChild(offGroup);
     const trashBtn = document.createElement('button');
     trashBtn.className = 'trash-btn';
-    trashBtn.innerHTML = '🗑';
+    trashBtn.innerHTML = 'Trash';
     trashBtn.onclick = async () => {
       await remove(ref(db, `${base}/fanSchedules/${key}`));
     };
@@ -423,7 +431,7 @@
     if (item) item.remove();
   });
   elements.addSchedule.onclick = addSchedule;
-  // === AUTO MODE ===
+
   async function checkAutoMode() {
     const isAuto = (await get(refs.kontrol)).val();
     if (!isAuto) return;
