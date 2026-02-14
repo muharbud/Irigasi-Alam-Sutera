@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Fire Monitoring</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+
+<!-- ✅ FIREBASE SDK (DITAMBAHKAN) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Inter',sans-serif}
+body{background:#f4f6f8;color:#1f2933}
+body.fire-alarm{animation:bgFlash 1s infinite}
+@keyframes bgFlash{0%{background:#f4f6f8}50%{background:#ffe5e5}100%{background:#f4f6f8}}
+.header{padding:18px 22px;background:var(--card);box-shadow:0 4px 20px rgba(0,0,0,.05);display:flex;justify-content:space-between;align-items:center}
+.title{font-size:clamp(16px,2.5vw,20px);font-weight:600;letter-spacing:0.5px}
+.subtitle{color:#9ca3af;font-size:clamp(12px,2.2vw,14px);margin-top:2px}
+.status{padding:8px 18px;border-radius:20px;font-weight:600;font-size:13px}
+.safe{background:#e6f7ee;color:#059669}
+.warning{background:#fff4e5;color:#d97706}
+.fire{background:#ffe5e5;color:#dc2626}
+.container{padding:20px;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px}
+.card{background:#ffffff;border-radius:18px;padding:20px;box-shadow:0 10px 25px rgba(0,0,0,0.05);transition:0.25s}
+.card:hover{transform:translateY(-3px);box-shadow:0 18px 35px rgba(0,0,0,0.08)}
+.card-header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.card-header i{width:22px;height:22px;color:#3b82f6}
+.icon-temp{color:#2563eb}
+.icon-smoke{color:#7c3aed}
+.icon-flame{color:#dc2626}
+.icon-pump{color:#059669}
+.icon-fan{color:#0ea5e9}
+.icon-window{color:#f59e0b}
+.icon-chart{color:#6366f1}
+.icon-camera{color:#374151}
+.card h3{font-size:13px;color:#6b7280;font-weight:600}
+.value{font-size:24px;font-weight:700;margin-top:4px}
+.device{display:flex;justify-content:space-between;margin-top:10px;font-weight:600}
+.active{color:#059669}
+.off{color:#9ca3af}
+.fire-blink{animation:blink 0.6s infinite}
+@keyframes blink{0%{opacity:1}50%{opacity:0.3}100%{opacity:1}}
+.fire-glow{box-shadow:0 0 25px rgba(220,38,38,0.8);border:1px solid #dc2626}
+.chart-container{grid-column:1/-1}
+.camera{grid-column:1/-1;text-align:center}
+.camera img{max-width:100%;border-radius:14px;box-shadow:0 10px 25px rgba(0,0,0,0.1)}
+</style>
+</head>
+<body>
+
+<div class="header">
+<div>
+    <div class="title">SMART FIRE RESPONSE SYSTEM</div>
+    <div class="subtitle">Location: Miniature House Lab</div>
+</div>
+<div id="systemStatus" class="status safe">SAFE</div>
+</div>
+
+<div class="container">
+
+<div class="card">
+<div class="card-header"><i data-lucide="thermometer" class="icon-temp"></i><h3>Temperature (DHT22)</h3></div>
+<div id="temp" class="value">--</div>
+</div>
+
+<div class="card">
+<div class="card-header"><i data-lucide="cloud" class="icon-smoke"></i><h3>Smoke / Gas Level (MQ-2)</h3></div>
+<div id="smoke" class="value">--</div>
+</div>
+
+<div class="card" id="flameCard">
+<div class="card-header"><i data-lucide="flame" class="icon-flame" id="flameIcon"></i><h3>Flame Detection</h3></div>
+<div id="flame" class="value">--</div>
+</div>
+
+<div class="card">
+<div class="card-header"><i data-lucide="droplets" class="icon-pump"></i><h3>Sprinkler Pump</h3></div>
+<div class="device"><span>Status</span><span id="pump" class="off">--</span></div>
+</div>
+
+<div class="card">
+<div class="card-header"><i data-lucide="fan" class="icon-fan"></i><h3>Exhaust Fan</h3></div>
+<div class="device"><span>Status</span><span id="fan" class="off">--</span></div>
+</div>
+
+<div class="card">
+<div class="card-header"><i data-lucide="blinds" class="icon-window"></i><h3>Window Servo</h3></div>
+<div class="device"><span>Position</span><span id="window" class="off">--</span></div>
+</div>
+
+<div class="card chart-container">
+<div class="card-header"><i data-lucide="activity" class="icon-chart"></i><h3>Temperature Trend</h3></div>
+<canvas id="chartTemp"></canvas>
+</div>
+
+<div class="card chart-container">
+<div class="card-header"><i data-lucide="activity"></i><h3>Humidity Trend</h3></div>
+<canvas id="chartHum"></canvas>
+</div>
+
+<div class="card chart-container">
+<div class="card-header"><i data-lucide="activity"></i><h3>Smoke Trend</h3></div>
+<canvas id="chartSmoke"></canvas>
+</div>
+
+</div>
+
+<script>
+lucide.createIcons();
+
+/* ================= FIREBASE CONNECTION ================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyBr7RIppvlSDb_XyOYgWJ2ouniiJ8jqZeo",
+  databaseURL: "https://smart-fire-response-system-default-rtdb.firebaseio.com/"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+/* ================= CHART ================= */
+function createChart(id,label,color){
+return new Chart(document.getElementById(id),{
+ type:'line',
+ data:{labels:[],datasets:[{label:label,data:[],tension:0.4,borderColor:color,backgroundColor:color,pointRadius:2,borderWidth:2}]},
+ options:{plugins:{legend:{display:false}},animation:false,scales:{y:{beginAtZero:false}}}
+});
+}
+
+const chartTemp=createChart('chartTemp','Temperature','#ef4444');
+const chartHum=createChart('chartHum','Humidity','#3b82f6');
+const chartSmoke=createChart('chartSmoke','Smoke','#6b7280');
+
+/* ================= REALTIME STATUS ================= */
+db.ref("/fire_system").on("value",snap=>{
+ const d=snap.val();
+ if(!d)return;
+
+ document.getElementById('temp').innerText=d.temperature.toFixed(1)+'°C';
+ document.getElementById('smoke').innerText=d.smoke_ppm+' ppm';
+ document.getElementById('flame').innerText=d.status;
+
+ document.getElementById('pump').innerText=d.pump?"ON":"OFF";
+ document.getElementById('fan').innerText=d.fan?"ON":"OFF";
+ document.getElementById('window').innerText=d.window>0?"OPEN":"CLOSED";
+
+ let cls="safe";
+ if(d.status==="SMOKE")cls="warning";
+ if(d.status==="FIRE")cls="fire";
+
+ const s=document.getElementById('systemStatus');
+ s.innerText=d.status;
+ s.className='status '+cls;
+});
+
+/* ================= HYBRID HISTORY LOADER ================= */
+/*  Load semua data SEKALI → lalu realtime hanya tambah titik baru */
+
+const historyRef = db.ref("/fire_history");
+
+let firstLoaded = false;
+let lastTimestamp = 0;
+
+/* ==== LOAD AWAL (SEMUA DATA) ==== */
+historyRef.once("value", snap=>{
+ if(!snap.exists()) return;
+
+ snap.forEach(child=>{
+  const v = child.val();
+  const ts = parseInt(child.key);
+  const time = new Date(ts*1000).toLocaleTimeString();
+
+  chartTemp.data.labels.push(time);
+  chartTemp.data.datasets[0].data.push(v.temperature);
+
+  chartHum.data.labels.push(time);
+  chartHum.data.datasets[0].data.push(v.humidity);
+
+  chartSmoke.data.labels.push(time);
+  chartSmoke.data.datasets[0].data.push(v.smoke);
+
+  lastTimestamp = ts;
+ });
+
+ chartTemp.update('none');
+ chartHum.update('none');
+ chartSmoke.update('none');
+
+ firstLoaded = true;
+});
+
+/* ==== REALTIME TAMBAH DATA BARU SAJA ==== */
+historyRef.on("child_added", snap=>{
+ if(!firstLoaded) return;
+
+ const ts = parseInt(snap.key);
+ if(ts <= lastTimestamp) return; // skip data lama
+
+ const v = snap.val();
+ const time = new Date(ts*1000).toLocaleTimeString();
+
+ chartTemp.data.labels.push(time);
+ chartTemp.data.datasets[0].data.push(v.temperature);
+
+ chartHum.data.labels.push(time);
+ chartHum.data.datasets[0].data.push(v.humidity);
+
+ chartSmoke.data.labels.push(time);
+ chartSmoke.data.datasets[0].data.push(v.smoke);
+
+ const MAX_POINTS = 300;
+ [chartTemp,chartHum,chartSmoke].forEach(c=>{
+  if(c.data.labels.length>MAX_POINTS){
+   c.data.labels.shift();
+   c.data.datasets[0].data.shift();
+  }
+  c.update('none');
+ });
+
+ lastTimestamp = ts;
+});
+</script>
+
+</body>
+</html>
