@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SmartStay — Owner Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0E1117;--bg2:#161B26;--bg3:#1E2535;--bg4:#252D40;
+  --border:#2A3347;--border2:#3A4560;
+  --text:#E8EDF5;--text2:#8A95A8;--text3:#5A6478;
+  --blue:#3B82F6;--blue-dim:#1E3A5F;--blue-text:#93C5FD;
+  --green:#22C55E;--green-dim:#14532D;--green-text:#86EFAC;
+  --amber:#F59E0B;--amber-dim:#451A03;--amber-text:#FDE68A;
+  --red:#EF4444;--red-dim:#450A0A;--red-text:#FCA5A5;
+  --purple:#A78BFA;--purple-dim:#2E1065;
+  --cyan:#22D3EE;--cyan-dim:#083344;--cyan-text:#67E8F9;
+  --radius:10px;--radius-sm:6px;
+  --font:'Inter',system-ui,sans-serif;
+  --mono:'JetBrains Mono',monospace;
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.5}
+button{font-family:var(--font);cursor:pointer}
+input,select,textarea{font-family:var(--font)}
+
+/* Layout */
+.layout{display:flex;height:100vh;overflow:hidden}
+
+/* Sidebar */
+.sidebar{width:220px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto}
+.sidebar-logo{display:flex;align-items:center;gap:10px;padding:20px 18px 16px;border-bottom:1px solid var(--border)}
+.logo-mark{width:32px;height:32px;background:var(--blue);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.logo-text{font-size:15px;font-weight:600;color:var(--text)}
+.logo-sub{font-size:11px;color:var(--text3);font-family:var(--mono)}
+.nav-section{padding:14px 10px 6px}
+.nav-label{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;padding:0 8px;margin-bottom:4px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:var(--radius-sm);color:var(--text2);font-size:13px;cursor:pointer;border:none;background:transparent;width:100%;text-align:left;transition:background .15s,color .15s}
+.nav-item:hover{background:var(--bg3);color:var(--text)}
+.nav-item.active{background:var(--blue-dim);color:var(--blue-text)}
+.nav-icon{font-size:16px;width:18px;text-align:center}
+.nav-badge{margin-left:auto;background:var(--red-dim);color:var(--red-text);font-size:10px;padding:1px 6px;border-radius:20px;font-weight:500}
+.sidebar-footer{margin-top:auto;border-top:1px solid var(--border);padding:12px 18px;display:flex;align-items:center;gap:10px}
+.avatar-sm{width:32px;height:32px;background:var(--bg4);border:1px solid var(--border2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--text2);flex-shrink:0}
+.footer-name{font-size:13px;font-weight:500;color:var(--text)}
+.footer-role{font-size:11px;color:var(--text3)}
+
+/* Main */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.topbar-title{font-size:15px;font-weight:600;color:var(--text)}
+.topbar-sub{font-size:12px;color:var(--text3)}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.icon-btn{width:34px;height:34px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);font-size:16px;transition:background .15s}
+.icon-btn:hover{background:var(--bg4);color:var(--text)}
+.notif-dot{background:var(--amber);color:#000;font-size:10px;font-weight:600;padding:1px 7px;border-radius:20px}
+.content{flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:20px}
+
+/* Metrics */
+.metric-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.metric-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px}
+.metric-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.metric-label{font-size:12px;color:var(--text2)}
+.metric-icon{width:28px;height:28px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:14px}
+.metric-val{font-size:26px;font-weight:600;line-height:1;margin-bottom:4px}
+.metric-trend{font-size:11px;color:var(--text3)}
+.trend-up{color:var(--green-text)}
+
+/* Section header */
+.section-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.section-title{font-size:14px;font-weight:600;color:var(--text)}
+.section-sub{font-size:12px;color:var(--text3);margin-top:1px}
+
+/* Pills */
+.pill{font-size:10px;font-weight:600;padding:2px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:.04em}
+.pill-occ{background:var(--green-dim);color:var(--green-text)}
+.pill-empty{background:var(--bg4);color:var(--text3)}
+.pill-exp{background:var(--amber-dim);color:var(--amber-text)}
+
+/* Unit type badge */
+.unit-type-badge{font-size:10px;background:var(--purple-dim);color:var(--purple);padding:1px 7px;border-radius:20px;margin-left:auto}
+
+/* Progress bar */
+.progress-wrap{background:var(--bg4);border-radius:4px;height:3px;margin-bottom:8px;overflow:hidden}
+.progress-bar{height:3px;border-radius:4px;transition:width .3s}
+.prog-blue{background:var(--blue)}
+.prog-amber{background:var(--amber)}
+.prog-red{background:var(--red)}
+
+/* Buttons */
+.btn-xs{font-size:11px;padding:4px 10px;border-radius:var(--radius-sm);border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;transition:all .15s}
+.btn-xs:hover{background:var(--bg4);color:var(--text)}
+.btn-xs.blue{background:var(--blue);color:#fff;border-color:var(--blue)}
+.btn-xs.blue:hover{background:#2563EB}
+.btn-xs.red{color:var(--red-text);border-color:var(--red-dim)}
+.btn-xs.red:hover{background:var(--red-dim)}
+
+/* Filter row */
+.filter-row{display:flex;gap:6px}
+.filter-btn{font-size:12px;padding:5px 13px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;transition:all .15s}
+.filter-btn:hover{background:var(--bg3);color:var(--text)}
+.filter-btn.active{background:var(--blue-dim);color:var(--blue-text);border-color:var(--blue)}
+
+/* Unit grid */
+.unit-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+
+/* Dashboard read-only cards */
+.unit-card-ro{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px}
+.unit-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.unit-num{font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:6px}
+.unit-guest{font-size:12px;color:var(--text2);margin-bottom:8px;display:flex;align-items:center;gap:5px}
+.unit-footer{display:flex;align-items:center;justify-content:space-between}
+.unit-remain{font-size:11px;color:var(--text3);font-family:var(--mono)}
+
+/* Kelola Unit clickable cards */
+.unit-card-ctrl{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;cursor:pointer;transition:border-color .15s,background .15s}
+.unit-card-ctrl:hover{border-color:var(--border2);background:var(--bg3)}
+.unit-card-ctrl.selected{border-color:var(--blue);background:rgba(59,130,246,.06)}
+
+/* Unit detail panel */
+.unit-detail-wrap{background:var(--bg2);border:1px solid var(--blue);border-radius:var(--radius);overflow:hidden;animation:fadeIn .2s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.unit-detail-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--bg3)}
+.unit-detail-title{font-size:14px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px}
+.unit-detail-body{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0}
+.detail-col{padding:16px 18px;border-right:1px solid var(--border)}
+.detail-col:last-child{border-right:none}
+.detail-col-title{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+
+/* Device rows */
+.dev-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)}
+.dev-row:last-of-type{border-bottom:none}
+.dev-name{font-size:13px;color:var(--text);display:flex;align-items:center;gap:8px}
+.dev-sub{font-size:10px;color:var(--text3);margin-top:1px}
+.dev-right{display:flex;align-items:center;gap:10px}
+.dev-state{font-size:11px;color:var(--text3);font-family:var(--mono)}
+.dev-state.on{color:var(--green-text)}
+
+/* Toggle */
+.toggle-wrap{position:relative;width:38px;height:21px}
+.toggle-wrap input{opacity:0;width:0;height:0;position:absolute}
+.toggle-track{position:absolute;inset:0;background:var(--bg4);border:1px solid var(--border2);border-radius:21px;cursor:pointer;transition:background .2s,border-color .2s}
+.toggle-wrap input:checked+.toggle-track{background:var(--blue);border-color:var(--blue)}
+.toggle-track::after{content:'';position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:#fff;transition:left .2s}
+.toggle-wrap input:checked+.toggle-track::after{left:19px}
+
+/* IR grid */
+.ir-section{margin-top:14px}
+.ir-label{font-size:10px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em;font-weight:600;padding-top:10px;border-top:1px solid var(--border)}
+.ir-label:first-child{border-top:none;padding-top:0}
+.ir-grid{display:grid;gap:6px;margin-bottom:4px}
+.ir-grid-3{grid-template-columns:repeat(3,1fr)}
+.ir-btn{padding:9px 4px 7px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text2);font-size:11px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .15s}
+.ir-btn:hover{background:var(--bg4);border-color:var(--border2);color:var(--text)}
+.ir-btn:active{transform:scale(.96)}
+.ir-btn-icon{font-size:17px}
+
+/* Timer display */
+.timer-big{text-align:center;padding:12px 0 16px}
+.timer-num{font-size:32px;font-weight:600;font-family:var(--mono);color:var(--text);line-height:1;margin-bottom:4px}
+.timer-label{font-size:11px;color:var(--text3)}
+.timer-bar-full{background:var(--bg4);border-radius:6px;height:8px;margin:10px 0;overflow:hidden}
+.timer-bar-fill{height:8px;border-radius:6px}
+.sewa-info-row{display:flex;justify-content:space-between;margin-bottom:6px}
+.sewa-info-label{font-size:11px;color:var(--text3)}
+.sewa-info-val{font-size:11px;color:var(--text);font-weight:500;font-family:var(--mono)}
+
+/* Log */
+.log-item{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);align-items:flex-start}
+.log-item:last-child{border-bottom:none}
+.log-dot{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;margin-top:1px}
+.log-dot.green{background:var(--green-dim);color:var(--green-text)}
+.log-dot.blue{background:var(--blue-dim);color:var(--blue-text)}
+.log-dot.amber{background:var(--amber-dim);color:var(--amber-text)}
+.log-dot.red{background:var(--red-dim);color:var(--red-text)}
+.log-body{flex:1}
+.log-main{font-size:12px;color:var(--text)}
+.log-time{font-size:11px;color:var(--text3);font-family:var(--mono);margin-top:1px}
+
+/* Panel */
+.panel{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+.panel-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:14px;display:flex;align-items:center;gap:7px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+
+/* RFID */
+.rfid-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.rfid-item:last-child{border-bottom:none}
+.rfid-id{font-size:12px;font-family:var(--mono);color:var(--blue-text)}
+.rfid-guest{font-size:11px;color:var(--text2)}
+
+/* Payment */
+.pay-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.pay-item:last-child{border-bottom:none}
+.pay-method{width:34px;height:34px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.pay-body{flex:1}
+.pay-guest{font-size:12px;color:var(--text)}
+.pay-detail{font-size:11px;color:var(--text3)}
+.pay-amount{font-size:13px;font-weight:600;color:var(--green-text);font-family:var(--mono)}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;z-index:1000;backdrop-filter:blur(2px)}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);padding:22px;width:400px;max-width:95vw;max-height:90vh;overflow-y:auto}
+.modal-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.modal-title{font-size:15px;font-weight:600;color:var(--text)}
+.modal-close{width:28px;height:28px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);font-size:15px}
+.modal-close:hover{color:var(--text);background:var(--bg4)}
+.form-group{margin-bottom:14px}
+.form-label{display:block;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+input[type=text],input[type=date],input[type=time],input[type=number],select{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-size:13px;padding:9px 12px;outline:none;transition:border-color .15s}
+input:focus,select:focus{border-color:var(--blue)}
+select option{background:var(--bg3)}
+.type-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.type-opt{padding:10px 8px;border:1px solid var(--border2);border-radius:var(--radius-sm);text-align:center;cursor:pointer;color:var(--text2);font-size:12px;background:var(--bg3);transition:all .15s}
+.type-opt:hover{background:var(--bg4)}
+.type-opt.sel{border-color:var(--blue);background:var(--blue-dim);color:var(--blue-text)}
+.type-opt-icon{font-size:20px;margin-bottom:4px}
+.type-opt-name{font-weight:600;font-size:12px}
+.type-opt-sub{font-size:10px;margin-top:2px;opacity:.7}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.price-preview{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.price-label{font-size:12px;color:var(--text2)}
+.price-val{font-size:17px;font-weight:600;color:var(--green-text);font-family:var(--mono)}
+.modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+.btn-cancel{padding:10px;background:transparent;border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text2);font-size:13px;font-weight:500;cursor:pointer;transition:all .15s}
+.btn-cancel:hover{background:var(--bg3);color:var(--text)}
+.btn-confirm{padding:10px;background:var(--blue);border:none;border-radius:var(--radius-sm);color:#fff;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s}
+.btn-confirm:hover{background:#2563EB}
+
+/* Detail grid (settings) */
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* Toast */
+.toast-container{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:8px;z-index:2000;pointer-events:none}
+.toast{padding:11px 16px;border-radius:var(--radius-sm);font-size:13px;border:1px solid;animation:toastIn .25s ease;display:flex;align-items:center;gap:8px}
+.toast.success{background:var(--green-dim);border-color:var(--green);color:var(--green-text)}
+.toast.error{background:var(--red-dim);border-color:var(--red);color:var(--red-text)}
+.toast.info{background:var(--blue-dim);border-color:var(--blue);color:var(--blue-text)}
+@keyframes toastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* Page */
+.page{display:none}
+.page.active{display:contents}
+
+/* Empty state */
+.empty-state{text-align:center;padding:32px 16px;color:var(--text3);font-size:13px}
+.empty-icon{font-size:32px;margin-bottom:8px}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+
+/* ── Sensor suhu & kelembaban (DHT22) ── */
+.sensor-section{margin-top:16px}
+.sensor-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.sensor-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:border-color .15s,background .15s}
+.sensor-card:hover{border-color:var(--border2);background:var(--bg4)}
+.sensor-icon{font-size:20px;flex-shrink:0}
+.sensor-val{font-size:18px;font-weight:600;font-family:var(--mono);line-height:1.1}
+.sensor-label{font-size:10px;color:var(--text3);margin-top:2px}
+.sensor-card.temp .sensor-val{color:var(--amber-text)}
+.sensor-card.hum .sensor-val{color:var(--cyan-text)}
+.sensor-status-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.sensor-status-row .sensor-meta{font-size:10px;color:var(--text3);font-family:var(--mono)}
+.chart-wrap{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 10px 6px;cursor:pointer;transition:border-color .15s,background .15s}
+.chart-wrap:hover{border-color:var(--blue)}
+.chart-wrap svg{display:block;width:100%;height:auto}
+.chart-legend{display:flex;gap:14px;justify-content:center;margin-top:4px}
+.chart-legend-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text2)}
+.chart-legend-dot{width:8px;height:8px;border-radius:50%}
+.chart-hint{text-align:center;font-size:10px;color:var(--text3);margin-top:6px}
+
+/* ── Modal detail sensor (rentang 1 menit) ── */
+.sensor-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:1100;backdrop-filter:blur(2px)}
+.sensor-modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);padding:0;width:680px;max-width:95vw;max-height:88vh;overflow-y:auto}
+.sensor-modal-hd{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border);background:var(--bg3);position:sticky;top:0}
+.sensor-modal-title{font-size:14px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px}
+.sensor-modal-sub{font-size:11px;color:var(--text3);margin-top:2px;font-family:var(--mono)}
+.sensor-modal-body{padding:20px 22px}
+.sensor-modal-section{margin-bottom:18px}
+.sensor-modal-section-title{font-size:12px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.sensor-modal-chart-wrap{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 12px 8px}
+.sensor-modal-chart-wrap svg{display:block;width:100%;height:auto}
+.sensor-modal-stats{display:flex;gap:10px;margin-bottom:8px}
+.sensor-modal-stat{flex:1;background:var(--bg4);border-radius:var(--radius-sm);padding:8px 10px;text-align:center}
+.sensor-modal-stat-val{font-size:14px;font-weight:600;font-family:var(--mono)}
+.sensor-modal-stat-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark">🏢</div>
+      <div>
+        <div class="logo-text">SmartStay</div>
+        <div class="logo-sub">owner panel</div>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Utama</div>
+      <button class="nav-item active" onclick="showPage('dashboard',this)"><span class="nav-icon">⊞</span> Dashboard</button>
+      <button class="nav-item" onclick="showPage('units',this)"><span class="nav-icon">🚪</span> Kelola Unit</button>
+      <button class="nav-item" onclick="showPage('payments',this)"><span class="nav-icon">💳</span> Pembayaran</button>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Sistem</div>
+      <button class="nav-item" onclick="showPage('rfid',this)"><span class="nav-icon">📡</span> Manajemen RFID <span class="nav-badge">3</span></button>
+      <button class="nav-item" onclick="showPage('log',this)"><span class="nav-icon">📋</span> Log Aktivitas</button>
+      <button class="nav-item" onclick="showPage('settings',this)"><span class="nav-icon">⚙️</span> Pengaturan</button>
+    </div>
+    <div class="sidebar-footer">
+      <div class="avatar-sm">AJ</div>
+      <div>
+        <div class="footer-name">Ahmad Jaya</div>
+        <div class="footer-role">Pemilik</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="page-title">Dashboard</div>
+        <div class="topbar-sub" id="page-sub">Rabu, 18 Juni 2026 — 14:32</div>
+      </div>
+      <div class="topbar-right">
+        <span class="notif-dot">2 segera habis</span>
+        <button class="icon-btn" onclick="showToast('Data diperbarui','info')" title="Refresh">🔄</button>
+        <button class="icon-btn" title="Notifikasi">🔔</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ══════════════════════════
+           DASHBOARD — view only
+      ══════════════════════════ -->
+      <div class="page active" id="page-dashboard">
+
+        <div class="metric-grid">
+          <div class="metric-card">
+            <div class="metric-top"><div class="metric-label">Total unit</div><div class="metric-icon" style="background:var(--blue-dim);color:var(--blue-text)">🏠</div></div>
+            <div class="metric-val">12</div>
+            <div class="metric-trend">terdaftar di sistem</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-top"><div class="metric-label">Terisi sekarang</div><div class="metric-icon" style="background:var(--green-dim);color:var(--green-text)">✅</div></div>
+            <div class="metric-val" style="color:var(--green-text)">7</div>
+            <div class="metric-trend"><span class="trend-up">↑ 58%</span> occupancy hari ini</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-top"><div class="metric-label">Segera habis</div><div class="metric-icon" style="background:var(--amber-dim);color:var(--amber-text)">⏰</div></div>
+            <div class="metric-val" style="color:var(--amber-text)">2</div>
+            <div class="metric-trend">dalam 2 jam ke depan</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-top"><div class="metric-label">Pendapatan hari ini</div><div class="metric-icon" style="background:var(--green-dim);color:var(--green-text)">💰</div></div>
+            <div class="metric-val" style="font-size:20px;color:var(--green-text)">Rp 1,24jt</div>
+            <div class="metric-trend"><span class="trend-up">+18%</span> vs kemarin</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-hd">
+            <div>
+              <div class="section-title">Ringkasan status unit</div>
+              <div class="section-sub">Tampilan saja — untuk kontrol buka menu Kelola Unit</div>
+            </div>
+            <div class="filter-row">
+              <button class="filter-btn active" onclick="filterDash('all',this)">Semua</button>
+              <button class="filter-btn" onclick="filterDash('occupied',this)">Terisi</button>
+              <button class="filter-btn" onclick="filterDash('empty',this)">Kosong</button>
+              <button class="filter-btn" onclick="filterDash('expiring',this)">Hampir habis</button>
+            </div>
+          </div>
+          <div class="unit-grid" id="dash-grid"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">📋 Aktivitas terkini</div>
+          <div id="dash-log"></div>
+        </div>
+
+      </div><!-- /dashboard -->
+
+
+      <!-- ══════════════════════════
+           KELOLA UNIT — full kontrol
+      ══════════════════════════ -->
+      <div class="page" id="page-units">
+
+        <div class="section-hd">
+          <div>
+            <div class="section-title">Kelola Unit</div>
+            <div class="section-sub">Pilih unit untuk akses kontrol penuh</div>
+          </div>
+          <button class="btn-xs blue" onclick="openModal('add','')">+ Tambah Unit</button>
+        </div>
+
+        <div class="unit-grid" id="unit-grid-ctrl"></div>
+        <div id="unit-detail-container"></div>
+
+      </div><!-- /units -->
+
+
+      <!-- ══════════════════════════ PAYMENTS ══ -->
+      <div class="page" id="page-payments">
+        <div class="section-hd"><div><div class="section-title">Riwayat Pembayaran</div><div class="section-sub">Semua transaksi masuk</div></div></div>
+        <div class="panel"><div class="panel-title">🧾 Transaksi hari ini</div><div id="pay-list"></div></div>
+      </div>
+
+      <!-- ══════════════════════════ RFID ══ -->
+      <div class="page" id="page-rfid">
+        <div class="section-hd">
+          <div><div class="section-title">Manajemen Kartu RFID</div><div class="section-sub">Daftarkan atau cabut akses kartu</div></div>
+          <button class="btn-xs blue" onclick="showToast('Scan kartu baru pada reader pintu...','info')">+ Daftarkan Kartu</button>
+        </div>
+        <div class="panel"><div class="panel-title">📡 Kartu terdaftar</div><div id="rfid-list"></div></div>
+      </div>
+
+      <!-- ══════════════════════════ LOG ══ -->
+      <div class="page" id="page-log">
+        <div class="section-hd"><div><div class="section-title">Log Aktivitas Sistem</div><div class="section-sub">Semua event dari seluruh unit</div></div></div>
+        <div class="panel"><div class="panel-title">📋 Event log</div><div id="log-full"></div></div>
+      </div>
+
+      <!-- ══════════════════════════ SETTINGS ══ -->
+      <div class="page" id="page-settings">
+        <div class="section-hd"><div><div class="section-title">Pengaturan Sistem</div></div></div>
+        <div class="detail-grid">
+          <div class="panel">
+            <div class="panel-title">⚙️ Tarif sewa</div>
+            <div class="form-group"><label class="form-label">Tarif harian (Rp)</label><input type="number" value="250000"/></div>
+            <div class="form-group"><label class="form-label">Tarif per jam (Rp)</label><input type="number" value="75000"/></div>
+            <div class="form-group"><label class="form-label">Deposit (Rp)</label><input type="number" value="100000"/></div>
+            <button class="btn-confirm" style="width:100%" onclick="showToast('Tarif berhasil disimpan','success')">Simpan tarif</button>
+          </div>
+          <div class="panel">
+            <div class="panel-title">🔔 Notifikasi otomatis</div>
+            <div class="dev-row"><div class="dev-name">Notif 30 menit sebelum habis</div><label class="toggle-wrap"><input type="checkbox" checked/><div class="toggle-track"></div></label></div>
+            <div class="dev-row"><div class="dev-name">Notif 10 menit sebelum habis</div><label class="toggle-wrap"><input type="checkbox" checked/><div class="toggle-track"></div></label></div>
+            <div class="dev-row"><div class="dev-name">Email konfirmasi pembayaran</div><label class="toggle-wrap"><input type="checkbox" checked/><div class="toggle-track"></div></label></div>
+            <div class="dev-row"><div class="dev-name">Auto-matikan listrik saat habis</div><label class="toggle-wrap"><input type="checkbox" checked/><div class="toggle-track"></div></label></div>
+            <div class="dev-row"><div class="dev-name">Welcome light saat check-in</div><label class="toggle-wrap"><input type="checkbox" checked/><div class="toggle-track"></div></label></div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /layout -->
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal" style="display:none" onclick="closeModalOutside(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-hd">
+      <div class="modal-title" id="modal-title">Buat sewa baru</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<!-- Modal detail sensor (rentang 1 menit) -->
+<div class="sensor-modal-overlay" id="sensor-modal" style="display:none" onclick="closeSensorModalOutside(event)">
+  <div class="sensor-modal" onclick="event.stopPropagation()">
+    <div class="sensor-modal-hd">
+      <div>
+        <div class="sensor-modal-title" id="sensor-modal-title">🌡️ Detail Suhu &amp; Kelembaban</div>
+        <div class="sensor-modal-sub" id="sensor-modal-sub"></div>
+      </div>
+      <button class="modal-close" onclick="closeSensorModal()">✕</button>
+    </div>
+    <div class="sensor-modal-body" id="sensor-modal-body"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+// ══ DATA ══
+// "now" acuan waktu sistem — disamakan dengan topbar (14:32)
+const NOW_MINUTES = 14*60+32;
+
+const units = [
+  {id:'101',type:'harian',guest:'Budi Santoso',pct:72,remain:'7j 12m',status:'occupied',startTime:'07:18',
+   devices:{listrik_utama:true, lampu_utama:true, lampu_dapur:false, km_exhaust:false, ac:true, tv:false},
+   sensor:{temp:24.6, hum:58, history:[
+     {t:'10:00',temp:25.1,hum:55},{t:'10:30',temp:25.0,hum:56},{t:'11:00',temp:24.8,hum:57},
+     {t:'11:30',temp:24.9,hum:58},{t:'12:00',temp:25.2,hum:57},{t:'12:30',temp:25.0,hum:59},
+     {t:'13:00',temp:24.7,hum:60},{t:'13:30',temp:24.6,hum:59},{t:'14:00',temp:24.6,hum:58}
+   ]}},
+  {id:'102',type:'perjam',guest:'Rina Dewi',pct:18,remain:'54m',status:'expiring',startTime:'13:38',
+   devices:{listrik_utama:true, lampu_utama:true, lampu_dapur:false, km_exhaust:false, ac:false, tv:true},
+   sensor:{temp:27.3, hum:66, history:[
+     {t:'10:00',temp:26.0,hum:60},{t:'10:30',temp:26.2,hum:61},{t:'11:00',temp:26.5,hum:62},
+     {t:'11:30',temp:26.8,hum:63},{t:'12:00',temp:27.0,hum:64},{t:'12:30',temp:27.2,hum:65},
+     {t:'13:00',temp:27.1,hum:65},{t:'13:30',temp:27.4,hum:66},{t:'14:00',temp:27.3,hum:66}
+   ]}},
+  {id:'103',type:'',guest:'',pct:0,remain:'',status:'empty',startTime:null,
+   devices:{listrik_utama:false, lampu_utama:false, lampu_dapur:false, km_exhaust:false, ac:false, tv:false},
+   sensor:{temp:29.8, hum:70, history:[
+     {t:'10:00',temp:29.0,hum:68},{t:'10:30',temp:29.2,hum:68},{t:'11:00',temp:29.4,hum:69},
+     {t:'11:30',temp:29.5,hum:69},{t:'12:00',temp:29.6,hum:70},{t:'12:30',temp:29.7,hum:70},
+     {t:'13:00',temp:29.8,hum:70},{t:'13:30',temp:29.9,hum:71},{t:'14:00',temp:29.8,hum:70}
+   ]}},
+  {id:'104',type:'harian',guest:'Citra Lestari',pct:55,remain:'10j 40m',status:'occupied',startTime:'09:05',
+   devices:{listrik_utama:true, lampu_utama:false, lampu_dapur:true, km_exhaust:false, ac:true, tv:true},
+   sensor:{temp:23.9, hum:52, history:[
+     {t:'10:00',temp:25.5,hum:60},{t:'10:30',temp:25.0,hum:58},{t:'11:00',temp:24.5,hum:56},
+     {t:'11:30',temp:24.2,hum:54},{t:'12:00',temp:24.0,hum:53},{t:'12:30',temp:23.8,hum:52},
+     {t:'13:00',temp:23.9,hum:52},{t:'13:30',temp:23.9,hum:51},{t:'14:00',temp:23.9,hum:52}
+   ]}},
+  {id:'105',type:'perjam',guest:'Doni Kusuma',pct:8,remain:'28m',status:'expiring',startTime:'14:04',
+   devices:{listrik_utama:true, lampu_utama:true, lampu_dapur:false, km_exhaust:true, ac:false, tv:false},
+   sensor:{temp:28.1, hum:64, history:[
+     {t:'10:00',temp:27.2,hum:60},{t:'10:30',temp:27.4,hum:61},{t:'11:00',temp:27.6,hum:61},
+     {t:'11:30',temp:27.8,hum:62},{t:'12:00',temp:27.9,hum:63},{t:'12:30',temp:28.0,hum:63},
+     {t:'13:00',temp:28.0,hum:64},{t:'13:30',temp:28.2,hum:64},{t:'14:00',temp:28.1,hum:64}
+   ]}},
+  {id:'106',type:'',guest:'',pct:0,remain:'',status:'empty',startTime:null,
+   devices:{listrik_utama:false, lampu_utama:false, lampu_dapur:false, km_exhaust:false, ac:false, tv:false},
+   sensor:{temp:30.2, hum:72, history:[
+     {t:'10:00',temp:29.5,hum:69},{t:'10:30',temp:29.6,hum:70},{t:'11:00',temp:29.7,hum:70},
+     {t:'11:30',temp:29.9,hum:71},{t:'12:00',temp:30.0,hum:71},{t:'12:30',temp:30.1,hum:72},
+     {t:'13:00',temp:30.1,hum:72},{t:'13:30',temp:30.3,hum:72},{t:'14:00',temp:30.2,hum:72}
+   ]}},
+  {id:'201',type:'harian',guest:'Eka Putra',pct:90,remain:'1j 5m',status:'occupied',startTime:'13:27',
+   devices:{listrik_utama:true, lampu_utama:false, lampu_dapur:false, km_exhaust:false, ac:true, tv:false},
+   sensor:{temp:23.4, hum:50, history:[
+     {t:'10:00',temp:25.0,hum:58},{t:'10:30',temp:24.5,hum:56},{t:'11:00',temp:24.0,hum:54},
+     {t:'11:30',temp:23.7,hum:53},{t:'12:00',temp:23.5,hum:51},{t:'12:30',temp:23.4,hum:50},
+     {t:'13:00',temp:23.3,hum:50},{t:'13:30',temp:23.4,hum:49},{t:'14:00',temp:23.4,hum:50}
+   ]}},
+  {id:'202',type:'perjam',guest:'Fani Rahma',pct:60,remain:'3j 10m',status:'occupied',startTime:'11:22',
+   devices:{listrik_utama:true, lampu_utama:true, lampu_dapur:true, km_exhaust:false, ac:true, tv:true},
+   sensor:{temp:24.2, hum:55, history:[
+     {t:'10:00',temp:25.6,hum:60},{t:'10:30',temp:25.1,hum:59},{t:'11:00',temp:24.8,hum:58},
+     {t:'11:30',temp:24.5,hum:57},{t:'12:00',temp:24.3,hum:56},{t:'12:30',temp:24.2,hum:55},
+     {t:'13:00',temp:24.1,hum:55},{t:'13:30',temp:24.2,hum:54},{t:'14:00',temp:24.2,hum:55}
+   ]}},
+  {id:'203',type:'',guest:'',pct:0,remain:'',status:'empty',startTime:null,
+   devices:{listrik_utama:false, lampu_utama:false, lampu_dapur:false, km_exhaust:false, ac:false, tv:false},
+   sensor:{temp:29.5, hum:69, history:[
+     {t:'10:00',temp:28.8,hum:66},{t:'10:30',temp:29.0,hum:67},{t:'11:00',temp:29.1,hum:67},
+     {t:'11:30',temp:29.2,hum:68},{t:'12:00',temp:29.3,hum:68},{t:'12:30',temp:29.4,hum:69},
+     {t:'13:00',temp:29.4,hum:69},{t:'13:30',temp:29.6,hum:69},{t:'14:00',temp:29.5,hum:69}
+   ]}},
+  {id:'204',type:'harian',guest:'Galih Wicaksono',pct:40,remain:'14j 20m',status:'occupied',startTime:'00:12',
+   devices:{listrik_utama:true, lampu_utama:true, lampu_dapur:false, km_exhaust:false, ac:false, tv:true},
+   sensor:{temp:26.7, hum:61, history:[
+     {t:'10:00',temp:26.0,hum:58},{t:'10:30',temp:26.1,hum:58},{t:'11:00',temp:26.3,hum:59},
+     {t:'11:30',temp:26.4,hum:60},{t:'12:00',temp:26.5,hum:60},{t:'12:30',temp:26.6,hum:61},
+     {t:'13:00',temp:26.7,hum:61},{t:'13:30',temp:26.8,hum:61},{t:'14:00',temp:26.7,hum:61}
+   ]}},
+  {id:'205',type:'',guest:'',pct:0,remain:'',status:'empty',startTime:null,
+   devices:{listrik_utama:false, lampu_utama:false, lampu_dapur:false, km_exhaust:false, ac:false, tv:false},
+   sensor:{temp:30.0, hum:71, history:[
+     {t:'10:00',temp:29.3,hum:68},{t:'10:30',temp:29.4,hum:69},{t:'11:00',temp:29.6,hum:69},
+     {t:'11:30',temp:29.7,hum:70},{t:'12:00',temp:29.8,hum:70},{t:'12:30',temp:29.9,hum:70},
+     {t:'13:00',temp:29.9,hum:71},{t:'13:30',temp:30.1,hum:71},{t:'14:00',temp:30.0,hum:71}
+   ]}},
+  {id:'206',type:'perjam',guest:'Hana Sari',pct:50,remain:'4j 0m',status:'occupied',startTime:'10:30',
+   devices:{listrik_utama:true, lampu_utama:true, lampu_dapur:false, km_exhaust:false, ac:true, tv:false},
+   sensor:{temp:24.8, hum:57, history:[
+     {t:'10:00',temp:26.2,hum:62},{t:'10:30',temp:25.8,hum:61},{t:'11:00',temp:25.4,hum:60},
+     {t:'11:30',temp:25.1,hum:59},{t:'12:00',temp:24.9,hum:58},{t:'12:30',temp:24.8,hum:57},
+     {t:'13:00',temp:24.7,hum:57},{t:'13:30',temp:24.8,hum:56},{t:'14:00',temp:24.8,hum:57}
+   ]}},
+];
+
+// Device definitions — REVISED:
+// - lampu_kamar + exhaust digabung jadi km_exhaust (1 jalur listrik)
+// - lampu_ruang → lampu_utama
+// - tambah lampu_dapur
+const deviceDefs = [
+  {key:'listrik_utama', label:'Listrik utama',              icon:'⚡', sub:'Main power unit'},
+  {key:'lampu_utama',   label:'Lampu utama',                icon:'💡', sub:'Ruang utama'},
+  {key:'lampu_dapur',   label:'Lampu dapur',                icon:'💡', sub:'Area dapur'},
+  {key:'km_exhaust',    label:'Lampu KM + Exhaust',         icon:'🚿', sub:'1 jalur — otomatis via sensor'},
+  {key:'ac',            label:'AC',                         icon:'❄️', sub:'Dikontrol via IR Blaster'},
+  {key:'tv',            label:'TV',                         icon:'📺', sub:'Dikontrol via IR Blaster'},
+];
+
+const logs = [
+  {type:'green',icon:'✅',text:'Budi Santoso check-in unit 101 via RFID',time:'14:05'},
+  {type:'blue', icon:'⚡',text:'Listrik unit 102 aktif otomatis saat kartu masuk slot',time:'13:55'},
+  {type:'amber',icon:'⏰',text:'Rina Dewi — sewa hampir habis (54 menit lagi)',time:'13:50'},
+  {type:'green',icon:'💳',text:'Pembayaran QRIS Rp 280.000 — unit 204',time:'13:22'},
+  {type:'red',  icon:'🔌',text:'Listrik unit 109 dimatikan otomatis — sewa habis',time:'12:00'},
+  {type:'blue', icon:'❄️',text:'AC unit 201 dinyalakan via AI voice assistant',time:'11:45'},
+  {type:'green',icon:'✅',text:'Kartu RFID A3F2 berhasil didaftarkan untuk unit 103',time:'11:10'},
+  {type:'amber',icon:'⚠️',text:'Sensor HLK-LD2410 unit 102 — orang terdeteksi di KM',time:'10:55'},
+];
+
+const payments = [
+  {guest:'Budi Santoso', unit:'101',type:'Harian',method:'QRIS', amount:'Rp 250.000',time:'14:05'},
+  {guest:'Rina Dewi',    unit:'102',type:'3 Jam', method:'GoPay',amount:'Rp 225.000',time:'13:22'},
+  {guest:'Citra Lestari',unit:'104',type:'Harian',method:'DANA', amount:'Rp 250.000',time:'09:12'},
+  {guest:'Doni Kusuma',  unit:'105',type:'2 Jam', method:'QRIS', amount:'Rp 150.000',time:'08:44'},
+  {guest:'Eka Putra',    unit:'201',type:'Harian',method:'Cash', amount:'Rp 250.000',time:'08:10'},
+];
+
+const rfidCards = [
+  {id:'A3F2-8C1E',guest:'Budi Santoso',    unit:'101',status:'active'},
+  {id:'B7D4-2A90',guest:'Rina Dewi',       unit:'102',status:'active'},
+  {id:'C1E9-5F33',guest:'Citra Lestari',   unit:'104',status:'active'},
+  {id:'D4A1-7B22',guest:'—',               unit:'—',  status:'unassigned'},
+  {id:'E8C3-0D14',guest:'—',               unit:'—',  status:'unassigned'},
+  {id:'F2B6-9E07',guest:'Galih Wicaksono', unit:'204',status:'active'},
+];
+
+const methodIcons = {QRIS:'📱',GoPay:'🟢',DANA:'🔵',Cash:'💵'};
+
+// ══ STATE ══
+let selectedUnitId = null;
+let dashFilter = 'all';
+let sewaType = 'harian';
+
+// ══ NAVIGATION ══
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  const titles = {dashboard:'Dashboard',units:'Kelola Unit',payments:'Pembayaran',rfid:'Manajemen RFID',log:'Log Aktivitas',settings:'Pengaturan'};
+  document.getElementById('page-title').textContent = titles[id]||id;
+  if (id==='units')    { selectedUnitId=null; renderUnitsCtrl(); }
+  if (id==='payments') renderPayments();
+  if (id==='rfid')     renderRFID();
+  if (id==='log')      renderLogFull();
+}
+
+// ══ HELPERS ══
+function pillInfo(u) {
+  if (u.status==='expiring') return ['pill-exp','Hampir habis'];
+  if (u.status==='occupied') return ['pill-occ','Terisi'];
+  return ['pill-empty','Kosong'];
+}
+function progClass(pct) {
+  if (pct>=90) return 'prog-red';
+  if (pct>=70) return 'prog-amber';
+  return 'prog-blue';
+}
+
+// ══ DASHBOARD — read-only cards ══
+function dashCardHTML(u) {
+  const [pillCls,pillLbl] = pillInfo(u);
+  return `<div class="unit-card-ro">
+    <div class="unit-head">
+      <div class="unit-num">🚪 Unit ${u.id}</div>
+      <span class="pill ${pillCls}">${pillLbl}</span>
+    </div>
+    ${u.guest
+      ? `<div class="unit-guest">👤 ${u.guest}<span class="unit-type-badge">${u.type}</span></div>`
+      : `<div class="unit-guest" style="color:var(--text3)">Tidak ada tamu</div>`}
+    ${u.status!=='empty'
+      ? `<div class="progress-wrap"><div class="progress-bar ${progClass(u.pct)}" style="width:${u.pct}%"></div></div>
+         <div class="unit-remain">sisa ${u.remain}</div>`
+      : `<div style="height:19px;color:var(--text3);font-size:11px">—</div>`}
+  </div>`;
+}
+
+function renderDashGrid() {
+  const filtered = units.filter(u => dashFilter==='all' || u.status===dashFilter);
+  document.getElementById('dash-grid').innerHTML =
+    filtered.length ? filtered.map(dashCardHTML).join('') :
+    '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🔍</div>Tidak ada unit dengan filter ini</div>';
+}
+
+function filterDash(f, btn) {
+  dashFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderDashGrid();
+}
+
+function renderDashLog() {
+  document.getElementById('dash-log').innerHTML = logs.slice(0,5).map(logItemHTML).join('');
+}
+
+// ══ KELOLA UNIT ══
+function ctrlCardHTML(u) {
+  const [pillCls,pillLbl] = pillInfo(u);
+  const isSel = selectedUnitId===u.id;
+  return `<div class="unit-card-ctrl${isSel?' selected':''}" onclick="selectUnit('${u.id}')">
+    <div class="unit-head">
+      <div class="unit-num">🚪 Unit ${u.id}</div>
+      <span class="pill ${pillCls}">${pillLbl}</span>
+    </div>
+    ${u.guest
+      ? `<div class="unit-guest">👤 ${u.guest}<span class="unit-type-badge">${u.type}</span></div>`
+      : `<div class="unit-guest" style="color:var(--text3)">Tidak ada tamu</div>`}
+    ${u.status!=='empty'
+      ? `<div class="progress-wrap"><div class="progress-bar ${progClass(u.pct)}" style="width:${u.pct}%"></div></div>
+         <div class="unit-remain" style="margin-bottom:2px">sisa ${u.remain}</div>`
+      : `<div style="height:21px"></div>`}
+    <div style="margin-top:6px;font-size:11px;color:${isSel?'var(--blue-text)':'var(--text3)'}">
+      ${isSel ? '▲ Panel kontrol terbuka di bawah' : 'Klik untuk kontrol →'}
+    </div>
+  </div>`;
+}
+
+function renderUnitsCtrl() {
+  document.getElementById('unit-grid-ctrl').innerHTML = units.map(ctrlCardHTML).join('');
+  renderUnitDetail();
+}
+
+function selectUnit(id) {
+  selectedUnitId = selectedUnitId===id ? null : id;
+  renderUnitsCtrl();
+  if (selectedUnitId) {
+    setTimeout(() => {
+      document.getElementById('unit-detail-container').scrollIntoView({behavior:'smooth',block:'nearest'});
+    }, 80);
+  }
+}
+
+// ══ SENSOR DHT22 — kartu ringkasan + grafik SVG ══
+function sensorStatusInfo(temp) {
+  if (temp>=29) return {color:'var(--red-text)',  label:'Panas'};
+  if (temp>=27) return {color:'var(--amber-text)',label:'Hangat'};
+  return {color:'var(--green-text)',label:'Normal'};
+}
+
+function buildSensorChartSVG(history) {
+  const W=320, H=130, padL=30, padR=8, padT=10, padB=20;
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+  const n = history.length;
+
+  const temps = history.map(h=>h.temp);
+  const hums  = history.map(h=>h.hum);
+  const tMin = Math.floor(Math.min(...temps)-1), tMax = Math.ceil(Math.max(...temps)+1);
+  const hMin = Math.floor(Math.min(...hums)-5),  hMax = Math.ceil(Math.max(...hums)+5);
+
+  const xFor = i => padL + (plotW * i/(n-1));
+  const yForTemp = v => padT + plotH - ((v - tMin)/(tMax - tMin)) * plotH;
+  const yForHum  = v => padT + plotH - ((v - hMin)/(hMax - hMin)) * plotH;
+
+  const tempPts = history.map((h,i)=>`${xFor(i).toFixed(1)},${yForTemp(h.temp).toFixed(1)}`).join(' ');
+  const humPts  = history.map((h,i)=>`${xFor(i).toFixed(1)},${yForHum(h.hum).toFixed(1)}`).join(' ');
+
+  // gridlines (horizontal, 3 garis)
+  let gridLines = '';
+  for (let g=0; g<=2; g++) {
+    const y = padT + (plotH/2)*g;
+    gridLines += `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W-padR}" y2="${y.toFixed(1)}" stroke="var(--border)" stroke-width="1"/>`;
+  }
+
+  // x-axis labels: tampilkan awal, tengah, akhir
+  const labelIdxs = [0, Math.floor((n-1)/2), n-1];
+  let xLabels = '';
+  labelIdxs.forEach(i=>{
+    xLabels += `<text x="${xFor(i).toFixed(1)}" y="${H-4}" font-size="9" fill="var(--text3)" text-anchor="middle" font-family="JetBrains Mono, monospace">${history[i].t}</text>`;
+  });
+
+  // dot di titik terakhir
+  const lastX = xFor(n-1), lastTY = yForTemp(temps[n-1]), lastHY = yForHum(hums[n-1]);
+
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+    ${gridLines}
+    <polyline points="${humPts}" fill="none" stroke="var(--cyan)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" opacity="0.9"/>
+    <polyline points="${tempPts}" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${lastX.toFixed(1)}" cy="${lastHY.toFixed(1)}" r="3" fill="var(--cyan)"/>
+    <circle cx="${lastX.toFixed(1)}" cy="${lastTY.toFixed(1)}" r="3" fill="var(--amber)"/>
+    ${xLabels}
+  </svg>`;
+}
+
+function sensorSectionHTML(u) {
+  const s = u.sensor;
+  const st = sensorStatusInfo(s.temp);
+  return `<div class="sensor-section">
+    <div class="detail-col-title">🌡️ Suhu &amp; Kelembaban (DHT22)</div>
+    <div class="sensor-status-row">
+      <span class="pill" style="background:var(--bg4);color:${st.color}">${st.label}</span>
+      <span class="sensor-meta">update terakhir 14:00</span>
+    </div>
+    <div class="sensor-grid">
+      <div class="sensor-card temp" onclick="openSensorDetail('${u.id}')" title="Klik untuk detail per-menit">
+        <span class="sensor-icon">🌡️</span>
+        <div>
+          <div class="sensor-val">${s.temp.toFixed(1)}°C</div>
+          <div class="sensor-label">Suhu ruangan</div>
+        </div>
+      </div>
+      <div class="sensor-card hum" onclick="openSensorDetail('${u.id}')" title="Klik untuk detail per-menit">
+        <span class="sensor-icon">💧</span>
+        <div>
+          <div class="sensor-val">${s.hum}%</div>
+          <div class="sensor-label">Kelembaban</div>
+        </div>
+      </div>
+    </div>
+    <div class="chart-wrap" onclick="openSensorDetail('${u.id}')" title="Klik untuk detail per-menit">
+      ${buildSensorChartSVG(s.history)}
+      <div class="chart-legend">
+        <span class="chart-legend-item"><span class="chart-legend-dot" style="background:var(--amber)"></span>Suhu (°C)</span>
+        <span class="chart-legend-item"><span class="chart-legend-dot" style="background:var(--cyan)"></span>Kelembaban (%)</span>
+      </div>
+    </div>
+    <div class="chart-hint">🔍 Klik grafik untuk lihat detail per-menit sejak kamar terisi</div>
+  </div>`;
+}
+
+// ══ UNIT DETAIL PANEL ══
+function renderUnitDetail() {
+  const container = document.getElementById('unit-detail-container');
+  if (!selectedUnitId) { container.innerHTML=''; return; }
+  const u = units.find(x=>x.id===selectedUnitId);
+
+  // ── Info sewa col ──
+  const sewaCol = u.status!=='empty' ? `
+    <div class="sewa-info-row"><span class="sewa-info-label">Tamu</span><span class="sewa-info-val">${u.guest}</span></div>
+    <div class="sewa-info-row"><span class="sewa-info-label">Tipe sewa</span><span class="sewa-info-val">${u.type}</span></div>
+    <div class="sewa-info-row"><span class="sewa-info-label">Status</span>
+      <span class="sewa-info-val" style="color:${u.status==='expiring'?'var(--amber-text)':'var(--green-text)'}">
+        ${u.status==='expiring'?'⚠️ Hampir habis':'✅ Aktif'}
+      </span>
+    </div>
+    <div class="timer-big">
+      <div class="timer-num">${u.remain}</div>
+      <div class="timer-label">sisa waktu sewa</div>
+      <div class="timer-bar-full"><div class="timer-bar-fill ${progClass(u.pct)}" style="width:${u.pct}%"></div></div>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="btn-confirm" style="flex:1;padding:8px" onclick="openModal('perpanjang','${u.id}')">Perpanjang sewa</button>
+      <button class="btn-xs red" style="padding:8px 12px" onclick="cutSewa('${u.id}')">⏹ Cut sewa</button>
+    </div>` :
+    `<div class="empty-state" style="padding:20px 0">
+      <div class="empty-icon">🚪</div>
+      <div style="margin-bottom:12px">Unit kosong</div>
+    </div>
+    <button class="btn-confirm" style="width:100%" onclick="openModal('sewa','${u.id}')">+ Buat Sewa Baru</button>`;
+
+  // ── Device control col ──
+  // Build device rows — km_exhaust punya note sensor otomatis
+  const devRows = deviceDefs.map(def => {
+    const isOn = u.devices[def.key];
+    const isAuto = def.key === 'km_exhaust'; // dikontrol sensor, tapi bisa override
+    return `<div class="dev-row">
+      <div>
+        <div class="dev-name">${def.icon} ${def.label}</div>
+        ${isAuto ? `<div class="dev-sub">Auto via sensor · bisa override</div>` : `<div class="dev-sub">${def.sub}</div>`}
+      </div>
+      <div class="dev-right">
+        <span class="dev-state ${isOn?'on':''}">${isOn?'ON':'OFF'}</span>
+        <label class="toggle-wrap">
+          <input type="checkbox" ${isOn?'checked':''} onchange="toggleDev('${u.id}','${def.key}',this)"/>
+          <div class="toggle-track"></div>
+        </label>
+      </div>
+    </div>`;
+  }).join('');
+
+  // IR buttons — AC: 3 tombol saja (Power, Suhu+, Suhu-)
+  const acBtns = [
+    {icon:'⏻', l:'Power AC'},
+    {icon:'🌡️+', l:'Suhu +'},
+    {icon:'🌡️-', l:'Suhu -'},
+  ];
+  const tvBtns = [
+    {icon:'⏻',  l:'Power TV'},
+    {icon:'🔊+', l:'Vol +'},
+    {icon:'🔉-', l:'Vol -'},
+    {icon:'⏭️',  l:'Ch +'},
+    {icon:'⏮️',  l:'Ch -'},
+    {icon:'🔇',  l:'Mute'},
+  ];
+  const irAC = acBtns.map(b=>`<button class="ir-btn" onclick="sendIR('AC','${b.l}')"><span class="ir-btn-icon">${b.icon}</span>${b.l}</button>`).join('');
+  const irTV = tvBtns.map(b=>`<button class="ir-btn" onclick="sendIR('TV','${b.l}')"><span class="ir-btn-icon">${b.icon}</span>${b.l}</button>`).join('');
+
+  // ── Log & RFID col ──
+  const unitLogs = logs.filter(l=>l.text.includes('unit '+u.id)).slice(0,6);
+  const logHTML = unitLogs.length ? unitLogs.map(logItemHTML).join('') :
+    '<div class="empty-state"><div class="empty-icon">📋</div>Belum ada log</div>';
+
+  const unitRFID = rfidCards.filter(c=>c.unit===u.id);
+  const rfidHTML = unitRFID.length
+    ? unitRFID.map(c=>`
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
+          <span style="font-size:16px">📡</span>
+          <div style="flex:1"><div class="rfid-id">${c.id}</div><div class="rfid-guest">${c.guest}</div></div>
+          <span class="pill pill-occ">Aktif</span>
+          <button class="btn-xs red" onclick="showToast('Akses kartu ${c.id} dicabut','error')">Cabut</button>
+        </div>`).join('')
+    : `<div style="color:var(--text3);font-size:12px;padding:8px 0">Belum ada kartu terdaftar</div>
+       <button class="btn-xs blue" style="margin-top:8px" onclick="showToast('Scan kartu pada reader pintu unit ${u.id}...','info')">+ Daftarkan kartu</button>`;
+
+  container.innerHTML = `
+    <div class="unit-detail-wrap" style="margin-top:16px">
+      <div class="unit-detail-header">
+        <div class="unit-detail-title">
+          🏠 Unit ${u.id} — Panel Kontrol Penuh
+          <span class="pill ${u.status==='occupied'?'pill-occ':u.status==='expiring'?'pill-exp':'pill-empty'}">
+            ${u.status==='occupied'?'Terisi':u.status==='expiring'?'Hampir Habis':'Kosong'}
+          </span>
+        </div>
+        <button class="btn-xs" onclick="selectUnit('${u.id}')">✕ Tutup panel</button>
+      </div>
+
+      <div class="unit-detail-body">
+
+        <!-- Col 1: Info sewa -->
+        <div class="detail-col">
+          <div class="detail-col-title">⏱️ Info Sewa</div>
+          ${sewaCol}
+          ${sensorSectionHTML(u)}
+        </div>
+
+        <!-- Col 2: Kontrol perangkat + IR -->
+        <div class="detail-col">
+          <div class="detail-col-title">🔌 Kontrol Perangkat</div>
+          ${devRows}
+          <div class="ir-section">
+            <div class="ir-label">AC Control</div>
+            <div class="ir-grid ir-grid-3">${irAC}</div>
+            <div class="ir-label">TV Control</div>
+            <div class="ir-grid ir-grid-3">${irTV}</div>
+          </div>
+        </div>
+
+        <!-- Col 3: Log + RFID -->
+        <div class="detail-col">
+          <div class="detail-col-title">📋 Log Unit ${u.id}</div>
+          ${logHTML}
+          <div style="margin-top:16px">
+            <div class="detail-col-title">📡 Kartu RFID Unit ${u.id}</div>
+            ${rfidHTML}
+          </div>
+        </div>
+
+      </div>
+    </div>`;
+}
+
+function toggleDev(uid, key, el) {
+  const u = units.find(x=>x.id===uid);
+  u.devices[key] = el.checked;
+  const row = el.closest('.dev-row');
+  const st = row.querySelector('.dev-state');
+  st.textContent = el.checked?'ON':'OFF';
+  st.className = 'dev-state'+(el.checked?' on':'');
+  const def = deviceDefs.find(d=>d.key===key);
+  showToast(`${def.label} unit ${uid} — ${el.checked?'dinyalakan':'dimatikan'}`, el.checked?'success':'info');
+}
+
+function sendIR(device, cmd) {
+  showToast(`IR dikirim ke ${device}: ${cmd}`, 'info');
+}
+
+function cutSewa(uid) {
+  if (!confirm('Yakin cut sewa unit '+uid+'?\nListrik dan semua perangkat akan langsung dimatikan.')) return;
+  const u = units.find(x=>x.id===uid);
+  Object.keys(u.devices).forEach(k=>u.devices[k]=false);
+  u.status='empty'; u.guest=''; u.type=''; u.pct=0; u.remain=''; u.startTime=null;
+  selectedUnitId=null;
+  renderUnitsCtrl();
+  renderDashGrid();
+  showToast('Sewa unit '+uid+' diakhiri — semua perangkat dimatikan','error');
+}
+
+// ══ LOG ══
+function logItemHTML(l) {
+  return `<div class="log-item">
+    <div class="log-dot ${l.type}">${l.icon}</div>
+    <div class="log-body"><div class="log-main">${l.text}</div><div class="log-time">${l.time}</div></div>
+  </div>`;
+}
+function renderLogFull() {
+  document.getElementById('log-full').innerHTML = logs.map(logItemHTML).join('');
+}
+
+// ══ PAYMENTS ══
+function renderPayments() {
+  document.getElementById('pay-list').innerHTML = payments.map(p=>`
+    <div class="pay-item">
+      <div class="pay-method">${methodIcons[p.method]||'💳'}</div>
+      <div class="pay-body">
+        <div class="pay-guest">${p.guest} <span style="color:var(--text3)">· Unit ${p.unit} · ${p.type}</span></div>
+        <div class="pay-detail">${p.method} · ${p.time}</div>
+      </div>
+      <div class="pay-amount">${p.amount}</div>
+    </div>`).join('');
+}
+
+// ══ RFID ══
+function renderRFID() {
+  document.getElementById('rfid-list').innerHTML = rfidCards.map(c=>`
+    <div class="rfid-item">
+      <span style="font-size:18px">📡</span>
+      <div style="flex:1">
+        <div class="rfid-id">${c.id}</div>
+        <div class="rfid-guest">${c.guest!=='—'?c.guest+' · Unit '+c.unit:'Belum ditetapkan'}</div>
+      </div>
+      <span class="pill ${c.status==='active'?'pill-occ':'pill-empty'}">${c.status==='active'?'Aktif':'Kosong'}</span>
+      <button class="btn-xs red" style="margin-left:8px" onclick="showToast('Akses kartu ${c.id} dicabut','error')">Cabut</button>
+    </div>`).join('');
+}
+
+// ══ MODAL ══
+function openModal(mode, uid) {
+  const u = uid ? units.find(x=>x.id===uid) : null;
+  sewaType = 'harian';
+  const titles = {sewa:'Buat sewa baru — Unit '+uid, perpanjang:'Perpanjang sewa — Unit '+uid, add:'Tambah unit baru'};
+  document.getElementById('modal-title').textContent = titles[mode];
+
+  if (mode==='add') {
+    document.getElementById('modal-body').innerHTML = `
+      <div class="form-group"><label class="form-label">Nomor unit</label><input type="text" placeholder="mis. 301"/></div>
+      <div class="form-group"><label class="form-label">Lantai</label><input type="number" value="3"/></div>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeModal()">Batal</button>
+        <button class="btn-confirm" onclick="closeModal();showToast('Unit berhasil ditambahkan','success')">Tambah unit</button>
+      </div>`;
+  } else {
+    document.getElementById('modal-body').innerHTML = `
+      <div class="form-group">
+        <label class="form-label">Nama tamu</label>
+        <input type="text" id="inp-guest" placeholder="Nama lengkap tamu" value="${u&&u.guest?u.guest:''}"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tipe sewa</label>
+        <div class="type-grid">
+          <div class="type-opt sel" id="opt-harian" onclick="setSewaType('harian')">
+            <div class="type-opt-icon">📅</div>
+            <div class="type-opt-name">Harian</div>
+            <div class="type-opt-sub">12.00 → 12.00</div>
+          </div>
+          <div class="type-opt" id="opt-perjam" onclick="setSewaType('perjam')">
+            <div class="type-opt-icon">⏱️</div>
+            <div class="type-opt-name">Per jam</div>
+            <div class="type-opt-sub">bebas durasi</div>
+          </div>
+        </div>
+      </div>
+      <div class="form-group" id="row-jam" style="display:none">
+        <div class="two-col">
+          <div><label class="form-label">Jam mulai</label><input type="time" value="14:00" id="inp-mulai"/></div>
+          <div><label class="form-label">Durasi (jam)</label><input type="number" min="1" max="24" value="3" id="inp-durasi" oninput="updatePrice()"/></div>
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">Tanggal mulai</label><input type="date" value="${new Date().toISOString().slice(0,10)}"/></div>
+      <div class="price-preview">
+        <span class="price-label">Total tagihan</span>
+        <span class="price-val" id="price-val">Rp 250.000</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Metode pembayaran</label>
+        <select><option>QRIS</option><option>GoPay</option><option>DANA</option><option>Cash</option></select>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeModal()">Batal</button>
+        <button class="btn-confirm" onclick="confirmSewa('${uid}','${mode}')">Konfirmasi sewa</button>
+      </div>`;
+  }
+  document.getElementById('modal').style.display='flex';
+}
+
+function setSewaType(t) {
+  sewaType = t;
+  document.getElementById('opt-harian').className='type-opt'+(t==='harian'?' sel':'');
+  document.getElementById('opt-perjam').className ='type-opt'+(t==='perjam'?' sel':'');
+  document.getElementById('row-jam').style.display = t==='perjam'?'block':'none';
+  updatePrice();
+}
+
+function updatePrice() {
+  if (sewaType==='harian') { document.getElementById('price-val').textContent='Rp 250.000'; return; }
+  const dur = parseInt(document.getElementById('inp-durasi')?.value)||1;
+  document.getElementById('price-val').textContent='Rp '+(dur*75000).toLocaleString('id-ID');
+}
+
+function confirmSewa(uid, mode) {
+  const g = document.getElementById('inp-guest')?.value.trim();
+  if (!g) { showToast('Nama tamu wajib diisi','error'); return; }
+  const u = units.find(x=>x.id===uid);
+  if (u) {
+    u.status='occupied'; u.guest=g; u.type=sewaType; u.pct=5;
+    u.remain = sewaType==='harian'?'23j 55m':(parseInt(document.getElementById('inp-durasi')?.value)||3)+'j 0m';
+    u.devices.listrik_utama=true;
+    if (!u.startTime) {
+      const hh = String(Math.floor(NOW_MINUTES/60)).padStart(2,'0');
+      const mm = String(NOW_MINUTES%60).padStart(2,'0');
+      u.startTime = `${hh}:${mm}`;
+    }
+  }
+  closeModal();
+  renderUnitsCtrl();
+  renderDashGrid();
+  showToast(`Sewa unit ${uid} dikonfirmasi — listrik aktif`,'success');
+}
+
+function closeModal()         { document.getElementById('modal').style.display='none'; }
+function closeModalOutside(e) { if(e.target===document.getElementById('modal')) closeModal(); }
+
+// ══ SENSOR DETAIL MODAL — rentang 1 menit, sejak kamar terisi s/d sekarang ══
+
+// Generator angka pseudo-random tapi deterministik (berdasarkan seed string),
+// supaya grafik tidak berubah-ubah setiap kali dibuka untuk unit yang sama.
+function seededNoise(seedStr, idx) {
+  let h = 0;
+  const s = seedStr + '-' + idx;
+  for (let i=0;i<s.length;i++){ h = (h*31 + s.charCodeAt(i)) | 0; }
+  // pseudo-random terdistribusi -1..1
+  const x = Math.sin(h) * 10000;
+  return x - Math.floor(x);
+}
+
+function timeStrToMinutes(str) {
+  const [h,m] = str.split(':').map(Number);
+  return h*60+m;
+}
+function minutesToTimeStr(mins) {
+  const m = ((mins % 1440) + 1440) % 1440;
+  const hh = String(Math.floor(m/60)).padStart(2,'0');
+  const mm = String(m%60).padStart(2,'0');
+  return `${hh}:${mm}`;
+}
+
+// Bangun rangkaian data per-menit dari startTime unit hingga NOW_MINUTES,
+// menggunakan titik history (per 30 menit) milik unit sebagai acuan tren,
+// lalu diisi noise halus per-menit agar tampak seperti data sensor asli.
+function buildPerMinuteHistory(u) {
+  if (!u.startTime) return [];
+  const startMin = timeStrToMinutes(u.startTime);
+  const endMin = NOW_MINUTES;
+  const totalMin = Math.max(1, endMin - startMin);
+
+  const anchors = u.sensor.history; // titik tiap 30 menit, 10:00 → 14:00
+  const anchorMin = anchors.map(a => timeStrToMinutes(a.t));
+
+  function interp(arr, key, atMin) {
+    if (atMin <= anchorMin[0]) return arr[0][key];
+    if (atMin >= anchorMin[anchorMin.length-1]) return arr[arr.length-1][key];
+    for (let i=0;i<anchorMin.length-1;i++){
+      if (atMin >= anchorMin[i] && atMin <= anchorMin[i+1]) {
+        const ratio = (atMin - anchorMin[i]) / (anchorMin[i+1] - anchorMin[i]);
+        return arr[i][key] + (arr[i+1][key]-arr[i][key]) * ratio;
+      }
+    }
+    return arr[arr.length-1][key];
+  }
+
+  const out = [];
+  for (let m = startMin; m <= endMin; m++) {
+    const baseTemp = interp(anchors, 'temp', m);
+    const baseHum  = interp(anchors, 'hum', m);
+    const nTemp = (seededNoise(u.id+'-t', m) - 0.5) * 0.3; // ±0.15°C noise halus
+    const nHum  = (seededNoise(u.id+'-h', m) - 0.5) * 1.2; // ±0.6% noise halus
+    out.push({
+      t: minutesToTimeStr(m),
+      minIndex: m - startMin,
+      temp: Math.round((baseTemp + nTemp)*10)/10,
+      hum: Math.round((baseHum + nHum)*10)/10
+    });
+  }
+  return out;
+}
+
+// Bangun SVG chart tunggal (1 metrik) dari array data per-menit
+function buildSingleMetricSVG(data, key, color, unitLabel, yPad) {
+  const W=620, H=180, padL=38, padR=10, padT=12, padB=24;
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+  const n = data.length;
+  if (n < 2) {
+    return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+      <text x="${W/2}" y="${H/2}" font-size="12" fill="var(--text3)" text-anchor="middle">Data belum cukup</text>
+    </svg>`;
+  }
+
+  const vals = data.map(d=>d[key]);
+  const vMin = Math.floor(Math.min(...vals) - yPad);
+  const vMax = Math.ceil(Math.max(...vals) + yPad);
+
+  const xFor = i => padL + (plotW * i/(n-1));
+  const yFor = v => padT + plotH - ((v - vMin)/(vMax - vMin)) * plotH;
+
+  const pts = data.map((d,i)=>`${xFor(i).toFixed(1)},${yFor(d[key]).toFixed(1)}`).join(' ');
+
+  // area fill di bawah garis
+  const areaPts = `${xFor(0).toFixed(1)},${(padT+plotH).toFixed(1)} ${pts} ${xFor(n-1).toFixed(1)},${(padT+plotH).toFixed(1)}`;
+
+  // gridlines horizontal (4 garis) + label nilai
+  let gridLines = '';
+  const steps = 3;
+  for (let g=0; g<=steps; g++) {
+    const y = padT + (plotH/steps)*g;
+    const val = vMax - ((vMax-vMin)/steps)*g;
+    gridLines += `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W-padR}" y2="${y.toFixed(1)}" stroke="var(--border)" stroke-width="1"/>`;
+    gridLines += `<text x="${padL-6}" y="${(y+3).toFixed(1)}" font-size="9" fill="var(--text3)" text-anchor="end" font-family="JetBrains Mono, monospace">${val.toFixed(1)}</text>`;
+  }
+
+  // x labels: tampilkan beberapa titik waktu saja agar tidak padat (maks 6 label)
+  const labelCount = Math.min(6, n);
+  let xLabels = '';
+  for (let k=0;k<labelCount;k++){
+    const idx = Math.round((n-1) * k/(labelCount-1||1));
+    xLabels += `<text x="${xFor(idx).toFixed(1)}" y="${H-6}" font-size="9" fill="var(--text3)" text-anchor="middle" font-family="JetBrains Mono, monospace">${data[idx].t}</text>`;
+  }
+
+  const lastX = xFor(n-1), lastY = yFor(vals[n-1]);
+
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+    ${gridLines}
+    <polygon points="${areaPts}" fill="${color}" opacity="0.10"/>
+    <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${lastX.toFixed(1)}" cy="${lastY.toFixed(1)}" r="3.5" fill="${color}"/>
+    ${xLabels}
+  </svg>`;
+}
+
+function statBlock(label, val) {
+  return `<div class="sensor-modal-stat">
+    <div class="sensor-modal-stat-val">${val}</div>
+    <div class="sensor-modal-stat-lbl">${label}</div>
+  </div>`;
+}
+
+function openSensorDetail(uid) {
+  const u = units.find(x=>x.id===uid);
+  if (!u || !u.startTime) {
+    showToast('Unit kosong — belum ada riwayat sensor untuk ditampilkan','info');
+    return;
+  }
+
+  const data = buildPerMinuteHistory(u);
+  const temps = data.map(d=>d.temp);
+  const hums  = data.map(d=>d.hum);
+
+  document.getElementById('sensor-modal-title').innerHTML = `🌡️ Detail Suhu &amp; Kelembaban — Unit ${u.id}`;
+  document.getElementById('sensor-modal-sub').textContent =
+    `Rentang per menit · ${u.startTime} (mulai sewa) → ${minutesToTimeStr(NOW_MINUTES)} (sekarang) · ${data.length} titik data`;
+
+  const tempSVG = buildSingleMetricSVG(data, 'temp', 'var(--amber)', '°C', 0.5);
+  const humSVG  = buildSingleMetricSVG(data, 'hum',  'var(--cyan)',  '%',  2);
+
+  document.getElementById('sensor-modal-body').innerHTML = `
+    <div class="sensor-modal-section">
+      <div class="sensor-modal-section-title" style="color:var(--amber-text)">🌡️ Suhu Ruangan (°C)</div>
+      <div class="sensor-modal-stats">
+        ${statBlock('Min', Math.min(...temps).toFixed(1)+'°C')}
+        ${statBlock('Rata-rata', (temps.reduce((a,b)=>a+b,0)/temps.length).toFixed(1)+'°C')}
+        ${statBlock('Maks', Math.max(...temps).toFixed(1)+'°C')}
+        ${statBlock('Sekarang', temps[temps.length-1].toFixed(1)+'°C')}
+      </div>
+      <div class="sensor-modal-chart-wrap">${tempSVG}</div>
+    </div>
+    <div class="sensor-modal-section" style="margin-bottom:0">
+      <div class="sensor-modal-section-title" style="color:var(--cyan-text)">💧 Kelembaban (%)</div>
+      <div class="sensor-modal-stats">
+        ${statBlock('Min', Math.min(...hums).toFixed(1)+'%')}
+        ${statBlock('Rata-rata', (hums.reduce((a,b)=>a+b,0)/hums.length).toFixed(1)+'%')}
+        ${statBlock('Maks', Math.max(...hums).toFixed(1)+'%')}
+        ${statBlock('Sekarang', hums[hums.length-1].toFixed(1)+'%')}
+      </div>
+      <div class="sensor-modal-chart-wrap">${humSVG}</div>
+    </div>`;
+
+  document.getElementById('sensor-modal').style.display='flex';
+}
+
+function closeSensorModal()         { document.getElementById('sensor-modal').style.display='none'; }
+function closeSensorModalOutside(e) { if(e.target===document.getElementById('sensor-modal')) closeSensorModal(); }
+
+// ══ TOAST ══
+function showToast(msg, type='info') {
+  const icons={success:'✅',error:'❌',info:'ℹ️'};
+  const el=document.createElement('div');
+  el.className=`toast ${type}`;
+  el.innerHTML=`<span>${icons[type]}</span> ${msg}`;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(()=>el.remove(),3500);
+}
+
+// ══ INIT ══
+renderDashGrid();
+renderDashLog();
+</script>
+</body>
+</html>
