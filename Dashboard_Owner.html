@@ -280,6 +280,7 @@ select option{background:var(--bg3)}
     </div>
     <div class="nav-section">
       <div class="nav-label">Sistem</div>
+      <button class="nav-item" onclick="showPage('espnow',this)"><span class="nav-icon">🔗</span> Node ESP-NOW</button>
       <button class="nav-item" onclick="showPage('rfid',this)"><span class="nav-icon">📡</span> Manajemen RFID <span class="nav-badge">3</span></button>
       <button class="nav-item" onclick="showPage('log',this)"><span class="nav-icon">📋</span> Log Aktivitas</button>
       <button class="nav-item" onclick="showPage('settings',this)"><span class="nav-icon">⚙️</span> Pengaturan</button>
@@ -374,6 +375,29 @@ select option{background:var(--bg3)}
       </div><!-- /units -->
 
 
+      <!-- ══════════════════════════
+           NODE ESP-NOW — dikendalikan via Master ESP32-S3
+      ══════════════════════════ -->
+      <div class="page" id="page-espnow">
+
+        <div class="section-hd">
+          <div>
+            <div class="section-title">Node Belum Dipasangkan</div>
+            <div class="section-sub">Node yang baru menyala dan menunggu dipasangkan oleh master</div>
+          </div>
+        </div>
+        <div class="panel"><div id="espnow-pending"></div></div>
+
+        <div class="section-hd" style="margin-top:8px">
+          <div>
+            <div class="section-title">Node Terpasang</div>
+            <div class="section-sub">Klik toggle untuk kontrol ON/OFF langsung via master ESP32-S3</div>
+          </div>
+        </div>
+        <div class="panel"><div id="espnow-paired"></div></div>
+
+      </div><!-- /espnow -->
+
       <!-- ══════════════════════════ PAYMENTS (belum aktif) ══ -->
       <div class="page" id="page-payments">
         <div class="section-hd"><div><div class="section-title">Riwayat Pembayaran</div><div class="section-sub">Belum terhubung — fitur tahap selanjutnya</div></div></div>
@@ -418,7 +442,7 @@ select option{background:var(--bg3)}
   // ═══════════════════════════════════════════════
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-  import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+  import { getDatabase, ref, onValue, set, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyBzF8rPx2-IQanG1uFjnNkXZwm9tPaNwMQ",
@@ -447,6 +471,28 @@ select option{background:var(--bg3)}
         window.__firebaseUnits = data;
         window.renderAll();
       });
+
+      // ── Node ESP-NOW: pending & paired, disinkronkan oleh master ──
+      const pendingRef = ref(db, "nodes/pending");
+      onValue(pendingRef, (snapshot) => {
+        window.__espnowPending = snapshot.val() || {};
+        if (typeof window.renderEspNow === 'function') window.renderEspNow();
+      });
+
+      const pairedRef = ref(db, "nodes/paired");
+      onValue(pairedRef, (snapshot) => {
+        window.__espnowPaired = snapshot.val() || {};
+        if (typeof window.renderEspNow === 'function') window.renderEspNow();
+      });
+
+      // Master akan poll path ini, jalankan perintah via ESP-NOW,
+      // lalu hapus/mark command setelah selesai diproses.
+      window.__sendNodeCommand = function(mac, payload) {
+        return set(ref(db, "commands/" + mac), {
+          ...payload,
+          requested_at: Math.floor(Date.now() / 1000)
+        });
+      };
     })
     .catch((err) => {
       connEl.textContent = "🔴 Gagal terhubung: " + err.code;
@@ -532,8 +578,9 @@ function showPage(id, btn) {
   if (btn) btn.classList.add('active');
   const titles = {dashboard:'Dashboard',units:'Kelola Unit',payments:'Pembayaran',rfid:'Manajemen RFID',log:'Log Aktivitas',settings:'Pengaturan'};
   document.getElementById('page-title').textContent = titles[id]||id;
-  if (id==='units') { selectedUnitId=null; renderUnitsCtrl(); }
-  if (id==='log')   renderLogFull();
+  if (id==='units')  { selectedUnitId=null; renderUnitsCtrl(); }
+  if (id==='espnow') { if (typeof window.renderEspNow==='function') window.renderEspNow(); }
+  if (id==='log')    renderLogFull();
 }
 
 // ══════════════════════════════════════════════════
@@ -658,6 +705,83 @@ function renderUnitDetail() {
 }
 
 // ══════════════════════════════════════════════════
+// NODE ESP-NOW — pending & paired (dikendalikan via master ESP32-S3)
+// ══════════════════════════════════════════════════
+function pendingNodeHTML(mac, n) {
+  return `<div class="rfid-item">
+    <span style="font-size:18px">🆕</span>
+    <div style="flex:1">
+      <div class="rfid-id">${n.name || 'Node Baru'}</div>
+      <div class="rfid-guest" style="font-family:var(--mono)">${mac}</div>
+    </div>
+    <span class="pill pill-exp">Belum dipasangkan</span>
+    <button class="btn-xs blue" style="margin-left:8px" onclick="pairNode('${mac}')">+ Pasangkan</button>
+  </div>`;
+}
+
+function pairedNodeHTML(mac, n) {
+  const isOnline = !!n.online;
+  const isOn = !!n.status;
+  return `<div class="rfid-item">
+    <span style="font-size:18px">🔗</span>
+    <div style="flex:1">
+      <div class="rfid-id">${n.name || mac}</div>
+      <div class="rfid-guest" style="font-family:var(--mono)">${mac}</div>
+    </div>
+    <span class="pill ${isOnline ? 'pill-occ' : 'pill-off'}">${isOnline ? '🟢 Online' : '🔴 Offline'}</span>
+    <label class="toggle-wrap" style="margin-left:10px" title="${isOnline ? 'Toggle ON/OFF' : 'Node offline, tidak bisa dikontrol'}">
+      <input type="checkbox" ${isOn?'checked':''} ${isOnline ? '' : 'disabled'}
+             onchange="toggleNode('${mac}', this.checked)"/>
+      <div class="toggle-track"></div>
+    </label>
+    <button class="btn-xs red" style="margin-left:8px" onclick="unpairNode('${mac}')">Hapus</button>
+  </div>`;
+}
+
+window.renderEspNow = function() {
+  const pendingEl = document.getElementById('espnow-pending');
+  const pairedEl = document.getElementById('espnow-paired');
+  if (!pendingEl || !pairedEl) return; // halaman belum aktif di DOM, aman diabaikan
+
+  const pending = window.__espnowPending || {};
+  const paired = window.__espnowPaired || {};
+
+  const pendingEntries = Object.entries(pending);
+  const pairedEntries = Object.entries(paired);
+
+  pendingEl.innerHTML = pendingEntries.length
+    ? pendingEntries.map(([mac,n]) => pendingNodeHTML(mac,n)).join('')
+    : '<div class="empty-state"><div class="empty-icon">📡</div>Tidak ada node baru terdeteksi</div>';
+
+  pairedEl.innerHTML = pairedEntries.length
+    ? pairedEntries.map(([mac,n]) => pairedNodeHTML(mac,n)).join('')
+    : '<div class="empty-state"><div class="empty-icon">🔗</div>Belum ada node terpasang</div>';
+};
+
+function pairNode(mac) {
+  window.__sendNodeCommand(mac, { action: 'pair' })
+    .then(() => showToast('Perintah pasangkan dikirim ke master...', 'info'))
+    .catch(() => showToast('Gagal mengirim perintah ke Firebase', 'error'));
+}
+
+function unpairNode(mac) {
+  if (!confirm('Hapus node ini dari daftar terpasang?')) return;
+  window.__sendNodeCommand(mac, { action: 'unpair' })
+    .then(() => showToast('Perintah hapus node dikirim ke master...', 'info'))
+    .catch(() => showToast('Gagal mengirim perintah ke Firebase', 'error'));
+}
+
+function toggleNode(mac, checked) {
+  window.__sendNodeCommand(mac, { action: 'control', state: checked ? 1 : 0 })
+    .then(() => showToast(`Perintah ${checked ? 'ON' : 'OFF'} dikirim ke node ${mac}`, 'info'))
+    .catch(() => showToast('Gagal mengirim perintah ke Firebase', 'error'));
+}
+
+window.pairNode = pairNode;
+window.unpairNode = unpairNode;
+window.toggleNode = toggleNode;
+
+// ══════════════════════════════════════════════════
 // LOG
 // ══════════════════════════════════════════════════
 function logItemHTML(l) {
@@ -696,6 +820,7 @@ window.showToast = showToast;
 renderMetrics();
 renderDashGrid();
 renderLogFull();
+if (typeof window.renderEspNow==='function') window.renderEspNow();
 </script>
 </body>
 </html>
