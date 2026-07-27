@@ -79,6 +79,7 @@ input,select,textarea{font-family:var(--font)}
 .pill-occ{background:var(--green-dim);color:var(--green-text)}
 .pill-empty{background:var(--bg4);color:var(--text3)}
 .pill-exp{background:var(--amber-dim);color:var(--amber-text)}
+.pill-off{background:var(--red-dim);color:var(--red-text)}
 
 /* Unit type badge */
 .unit-type-badge{font-size:10px;background:var(--purple-dim);color:var(--purple);padding:1px 7px;border-radius:20px;margin-left:auto}
@@ -247,46 +248,16 @@ select option{background:var(--bg3)}
 .empty-state{text-align:center;padding:32px 16px;color:var(--text3);font-size:13px}
 .empty-icon{font-size:32px;margin-bottom:8px}
 
+/* Connection banner */
+.conn-banner{font-size:11px;padding:6px 12px;border-radius:var(--radius-sm);margin-bottom:4px;display:inline-flex;align-items:center;gap:6px;font-family:var(--mono)}
+.conn-banner.ok{background:var(--green-dim);color:var(--green-text)}
+.conn-banner.bad{background:var(--red-dim);color:var(--red-text)}
+.conn-banner.wait{background:var(--bg4);color:var(--text3)}
+
 /* Scrollbar */
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
-
-/* ── Sensor suhu & kelembaban (DHT22) ── */
-.sensor-section{margin-top:16px}
-.sensor-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
-.sensor-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:border-color .15s,background .15s}
-.sensor-card:hover{border-color:var(--border2);background:var(--bg4)}
-.sensor-icon{font-size:20px;flex-shrink:0}
-.sensor-val{font-size:18px;font-weight:600;font-family:var(--mono);line-height:1.1}
-.sensor-label{font-size:10px;color:var(--text3);margin-top:2px}
-.sensor-card.temp .sensor-val{color:var(--amber-text)}
-.sensor-card.hum .sensor-val{color:var(--cyan-text)}
-.sensor-status-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-.sensor-status-row .sensor-meta{font-size:10px;color:var(--text3);font-family:var(--mono)}
-.chart-wrap{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 10px 6px;cursor:pointer;transition:border-color .15s,background .15s}
-.chart-wrap:hover{border-color:var(--blue)}
-.chart-wrap svg{display:block;width:100%;height:auto}
-.chart-legend{display:flex;gap:14px;justify-content:center;margin-top:4px}
-.chart-legend-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text2)}
-.chart-legend-dot{width:8px;height:8px;border-radius:50%}
-.chart-hint{text-align:center;font-size:10px;color:var(--text3);margin-top:6px}
-
-/* ── Modal detail sensor (rentang 1 menit) ── */
-.sensor-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:1100;backdrop-filter:blur(2px)}
-.sensor-modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);padding:0;width:680px;max-width:95vw;max-height:88vh;overflow-y:auto}
-.sensor-modal-hd{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border);background:var(--bg3);position:sticky;top:0}
-.sensor-modal-title{font-size:14px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px}
-.sensor-modal-sub{font-size:11px;color:var(--text3);margin-top:2px;font-family:var(--mono)}
-.sensor-modal-body{padding:20px 22px}
-.sensor-modal-section{margin-bottom:18px}
-.sensor-modal-section-title{font-size:12px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px}
-.sensor-modal-chart-wrap{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 12px 8px}
-.sensor-modal-chart-wrap svg{display:block;width:100%;height:auto}
-.sensor-modal-stats{display:flex;gap:10px;margin-bottom:8px}
-.sensor-modal-stat{flex:1;background:var(--bg4);border-radius:var(--radius-sm);padding:8px 10px;text-align:center}
-.sensor-modal-stat-val{font-size:14px;font-weight:600;font-family:var(--mono)}
-.sensor-modal-stat-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
 </style>
 </head>
 <body>
@@ -327,11 +298,12 @@ select option{background:var(--bg3)}
     <div class="topbar">
       <div>
         <div class="topbar-title" id="page-title">Dashboard</div>
-        <div class="topbar-sub" id="page-sub">Rabu, 18 Juni 2026 — 14:32</div>
+        <div class="topbar-sub" id="page-sub">
+          <span id="conn-status" class="conn-banner wait">⏳ Menghubungkan ke Firebase...</span>
+        </div>
       </div>
       <div class="topbar-right">
-        <span class="notif-dot">2 segera habis</span>
-        <button class="icon-btn" onclick="showToast('Data diperbarui','info')" title="Refresh">🔄</button>
+        <button class="icon-btn" onclick="showToast('Data realtime dari Firebase','info')" title="Refresh">🔄</button>
         <button class="icon-btn" title="Notifikasi">🔔</button>
       </div>
     </div>
@@ -346,61 +318,54 @@ select option{background:var(--bg3)}
         <div class="metric-grid">
           <div class="metric-card">
             <div class="metric-top"><div class="metric-label">Total unit</div><div class="metric-icon" style="background:var(--blue-dim);color:var(--blue-text)">🏠</div></div>
-            <div class="metric-val">12</div>
-            <div class="metric-trend">terdaftar di sistem</div>
+            <div class="metric-val" id="metric-total">0</div>
+            <div class="metric-trend">terdaftar di Firebase</div>
           </div>
           <div class="metric-card">
-            <div class="metric-top"><div class="metric-label">Terisi sekarang</div><div class="metric-icon" style="background:var(--green-dim);color:var(--green-text)">✅</div></div>
-            <div class="metric-val" style="color:var(--green-text)">7</div>
-            <div class="metric-trend"><span class="trend-up">↑ 58%</span> occupancy hari ini</div>
+            <div class="metric-top"><div class="metric-label">Online sekarang</div><div class="metric-icon" style="background:var(--green-dim);color:var(--green-text)">✅</div></div>
+            <div class="metric-val" style="color:var(--green-text)" id="metric-online">0</div>
+            <div class="metric-trend">unit aktif terhubung</div>
           </div>
           <div class="metric-card">
-            <div class="metric-top"><div class="metric-label">Segera habis</div><div class="metric-icon" style="background:var(--amber-dim);color:var(--amber-text)">⏰</div></div>
-            <div class="metric-val" style="color:var(--amber-text)">2</div>
-            <div class="metric-trend">dalam 2 jam ke depan</div>
+            <div class="metric-top"><div class="metric-label">Offline</div><div class="metric-icon" style="background:var(--red-dim);color:var(--red-text)">🔴</div></div>
+            <div class="metric-val" style="color:var(--red-text)" id="metric-offline">0</div>
+            <div class="metric-trend">tidak ada heartbeat</div>
           </div>
           <div class="metric-card">
-            <div class="metric-top"><div class="metric-label">Pendapatan hari ini</div><div class="metric-icon" style="background:var(--green-dim);color:var(--green-text)">💰</div></div>
-            <div class="metric-val" style="font-size:20px;color:var(--green-text)">Rp 1,24jt</div>
-            <div class="metric-trend"><span class="trend-up">+18%</span> vs kemarin</div>
+            <div class="metric-top"><div class="metric-label">Update terakhir</div><div class="metric-icon" style="background:var(--bg4);color:var(--text2)">🕐</div></div>
+            <div class="metric-val" style="font-size:16px" id="metric-lastupdate">—</div>
+            <div class="metric-trend">waktu browser</div>
           </div>
         </div>
 
         <div>
           <div class="section-hd">
             <div>
-              <div class="section-title">Ringkasan status unit</div>
-              <div class="section-sub">Tampilan saja — untuk kontrol buka menu Kelola Unit</div>
+              <div class="section-title">Ringkasan status unit (ESP32-S3)</div>
+              <div class="section-sub">Data realtime dari Firebase — Tampilan saja</div>
             </div>
             <div class="filter-row">
               <button class="filter-btn active" onclick="filterDash('all',this)">Semua</button>
-              <button class="filter-btn" onclick="filterDash('occupied',this)">Terisi</button>
-              <button class="filter-btn" onclick="filterDash('empty',this)">Kosong</button>
-              <button class="filter-btn" onclick="filterDash('expiring',this)">Hampir habis</button>
+              <button class="filter-btn" onclick="filterDash('online',this)">Online</button>
+              <button class="filter-btn" onclick="filterDash('offline',this)">Offline</button>
             </div>
           </div>
           <div class="unit-grid" id="dash-grid"></div>
-        </div>
-
-        <div class="panel">
-          <div class="panel-title">📋 Aktivitas terkini</div>
-          <div id="dash-log"></div>
         </div>
 
       </div><!-- /dashboard -->
 
 
       <!-- ══════════════════════════
-           KELOLA UNIT — full kontrol
+           KELOLA UNIT
       ══════════════════════════ -->
       <div class="page" id="page-units">
 
         <div class="section-hd">
           <div>
             <div class="section-title">Kelola Unit</div>
-            <div class="section-sub">Pilih unit untuk akses kontrol penuh</div>
+            <div class="section-sub">Pilih unit untuk melihat detail koneksi</div>
           </div>
-          <button class="btn-xs blue" onclick="openModal('add','')">+ Tambah Unit</button>
         </div>
 
         <div class="unit-grid" id="unit-grid-ctrl"></div>
@@ -409,24 +374,21 @@ select option{background:var(--bg3)}
       </div><!-- /units -->
 
 
-      <!-- ══════════════════════════ PAYMENTS ══ -->
+      <!-- ══════════════════════════ PAYMENTS (belum aktif) ══ -->
       <div class="page" id="page-payments">
-        <div class="section-hd"><div><div class="section-title">Riwayat Pembayaran</div><div class="section-sub">Semua transaksi masuk</div></div></div>
-        <div class="panel"><div class="panel-title">🧾 Transaksi hari ini</div><div id="pay-list"></div></div>
+        <div class="section-hd"><div><div class="section-title">Riwayat Pembayaran</div><div class="section-sub">Belum terhubung — fitur tahap selanjutnya</div></div></div>
+        <div class="panel"><div class="empty-state"><div class="empty-icon">💳</div>Belum ada data pembayaran</div></div>
       </div>
 
-      <!-- ══════════════════════════ RFID ══ -->
+      <!-- ══════════════════════════ RFID (belum aktif) ══ -->
       <div class="page" id="page-rfid">
-        <div class="section-hd">
-          <div><div class="section-title">Manajemen Kartu RFID</div><div class="section-sub">Daftarkan atau cabut akses kartu</div></div>
-          <button class="btn-xs blue" onclick="showToast('Scan kartu baru pada reader pintu...','info')">+ Daftarkan Kartu</button>
-        </div>
-        <div class="panel"><div class="panel-title">📡 Kartu terdaftar</div><div id="rfid-list"></div></div>
+        <div class="section-hd"><div><div class="section-title">Manajemen Kartu RFID</div><div class="section-sub">Belum terhubung — fitur tahap selanjutnya</div></div></div>
+        <div class="panel"><div class="empty-state"><div class="empty-icon">📡</div>Belum ada kartu terdaftar</div></div>
       </div>
 
       <!-- ══════════════════════════ LOG ══ -->
       <div class="page" id="page-log">
-        <div class="section-hd"><div><div class="section-title">Log Aktivitas Sistem</div><div class="section-sub">Semua event dari seluruh unit</div></div></div>
+        <div class="section-hd"><div><div class="section-title">Log Aktivitas Sistem</div><div class="section-sub">Perubahan status online/offline unit</div></div></div>
         <div class="panel"><div class="panel-title">📋 Event log</div><div id="log-full"></div></div>
       </div>
 
@@ -435,19 +397,10 @@ select option{background:var(--bg3)}
         <div class="section-hd"><div><div class="section-title">Pengaturan Sistem</div></div></div>
         <div class="detail-grid">
           <div class="panel">
-            <div class="panel-title">⚙️ Tarif sewa</div>
-            <div class="form-group"><label class="form-label">Tarif harian (Rp)</label><input type="number" value="250000"/></div>
-            <div class="form-group"><label class="form-label">Tarif per jam (Rp)</label><input type="number" value="75000"/></div>
-            <div class="form-group"><label class="form-label">Deposit (Rp)</label><input type="number" value="100000"/></div>
-            <button class="btn-confirm" style="width:100%" onclick="showToast('Tarif berhasil disimpan','success')">Simpan tarif</button>
-          </div>
-          <div class="panel">
-            <div class="panel-title">🔔 Notifikasi otomatis</div>
-            <div class="dev-row"><div class="dev-name">Notif 30 menit sebelum habis</div><label class="toggle-wrap"><input type="checkbox" checked/><div class="toggle-track"></div></label></div>
-            <div class="dev-row"><div class="dev-name">Notif 10 menit sebelum habis</div><label class="toggle-wrap"><input type="checkbox" checked/><div class="toggle-track"></div></label></div>
-            <div class="dev-row"><div class="dev-name">Email konfirmasi pembayaran</div><label class="toggle-wrap"><input type="checkbox" checked/><div class="toggle-track"></div></label></div>
-            <div class="dev-row"><div class="dev-name">Auto-matikan listrik saat habis</div><label class="toggle-wrap"><input type="checkbox" checked/><div class="toggle-track"></div></label></div>
-            <div class="dev-row"><div class="dev-name">Welcome light saat check-in</div><label class="toggle-wrap"><input type="checkbox" checked/><div class="toggle-track"></div></label></div>
+            <div class="panel-title">🔥 Koneksi Firebase</div>
+            <div class="form-group"><label class="form-label">Database URL</label><input type="text" readonly value="https://proxima-centauri-920b9-default-rtdb.asia-southeast1.firebasedatabase.app"/></div>
+            <div class="form-group"><label class="form-label">Mode Auth</label><input type="text" readonly value="Anonymous"/></div>
+            <div class="form-group"><label class="form-label">Ambang batas offline (detik)</label><input type="number" id="inp-threshold" value="15" min="5" onchange="OFFLINE_THRESHOLD_SEC = parseInt(this.value)||15; renderAll();"/></div>
           </div>
         </div>
       </div>
@@ -456,175 +409,122 @@ select option{background:var(--bg3)}
   </div><!-- /main -->
 </div><!-- /layout -->
 
-<!-- Modal -->
-<div class="modal-overlay" id="modal" style="display:none" onclick="closeModalOutside(event)">
-  <div class="modal" onclick="event.stopPropagation()">
-    <div class="modal-hd">
-      <div class="modal-title" id="modal-title">Buat sewa baru</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
-    </div>
-    <div id="modal-body"></div>
-  </div>
-</div>
-
-<!-- Modal detail sensor (rentang 1 menit) -->
-<div class="sensor-modal-overlay" id="sensor-modal" style="display:none" onclick="closeSensorModalOutside(event)">
-  <div class="sensor-modal" onclick="event.stopPropagation()">
-    <div class="sensor-modal-hd">
-      <div>
-        <div class="sensor-modal-title" id="sensor-modal-title">🌡️ Detail Suhu &amp; Kelembaban</div>
-        <div class="sensor-modal-sub" id="sensor-modal-sub"></div>
-      </div>
-      <button class="modal-close" onclick="closeSensorModal()">✕</button>
-    </div>
-    <div class="sensor-modal-body" id="sensor-modal-body"></div>
-  </div>
-</div>
-
 <!-- Toast -->
 <div class="toast-container" id="toast-container"></div>
 
+<script type="module">
+  // ═══════════════════════════════════════════════
+  // FIREBASE SETUP — Anonymous Auth
+  // ═══════════════════════════════════════════════
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBzF8rPx2-IQanG1uFjnNkXZwm9tPaNwMQ",
+    authDomain: "proxima-centauri-920b9.firebaseapp.com",
+    databaseURL: "https://proxima-centauri-920b9-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "proxima-centauri-920b9",
+    storageBucket: "proxima-centauri-920b9.firebasestorage.app",
+    messagingSenderId: "363396087118",
+    appId: "1:363396087118:web:b17a252af3fe168237b21f"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getDatabase(app);
+
+  const connEl = document.getElementById('conn-status');
+
+  signInAnonymously(auth)
+    .then(() => {
+      connEl.textContent = "🟢 Terhubung ke Firebase";
+      connEl.className = "conn-banner ok";
+
+      const unitsRef = ref(db, "units");
+      onValue(unitsRef, (snapshot) => {
+        const data = snapshot.val() || {};
+        window.__firebaseUnits = data;
+        window.renderAll();
+      });
+    })
+    .catch((err) => {
+      connEl.textContent = "🔴 Gagal terhubung: " + err.code;
+      connEl.className = "conn-banner bad";
+      console.error("Firebase auth error:", err);
+    });
+</script>
+
 <script>
-// ══ DATA ══
-// "now" acuan waktu sistem — disamakan dengan topbar (14:32)
-const NOW_MINUTES = 14*60+32;
-
-const units = [
-  {id:'101',type:'harian',guest:'Budi Santoso',pct:72,remain:'7j 12m',status:'occupied',startTime:'07:18',
-   devices:{listrik_utama:true, lampu_utama:true, lampu_dapur:false, km_exhaust:false, ac:true, tv:false},
-   sensor:{temp:24.6, hum:58, history:[
-     {t:'10:00',temp:25.1,hum:55},{t:'10:30',temp:25.0,hum:56},{t:'11:00',temp:24.8,hum:57},
-     {t:'11:30',temp:24.9,hum:58},{t:'12:00',temp:25.2,hum:57},{t:'12:30',temp:25.0,hum:59},
-     {t:'13:00',temp:24.7,hum:60},{t:'13:30',temp:24.6,hum:59},{t:'14:00',temp:24.6,hum:58}
-   ]}},
-  {id:'102',type:'perjam',guest:'Rina Dewi',pct:18,remain:'54m',status:'expiring',startTime:'13:38',
-   devices:{listrik_utama:true, lampu_utama:true, lampu_dapur:false, km_exhaust:false, ac:false, tv:true},
-   sensor:{temp:27.3, hum:66, history:[
-     {t:'10:00',temp:26.0,hum:60},{t:'10:30',temp:26.2,hum:61},{t:'11:00',temp:26.5,hum:62},
-     {t:'11:30',temp:26.8,hum:63},{t:'12:00',temp:27.0,hum:64},{t:'12:30',temp:27.2,hum:65},
-     {t:'13:00',temp:27.1,hum:65},{t:'13:30',temp:27.4,hum:66},{t:'14:00',temp:27.3,hum:66}
-   ]}},
-  {id:'103',type:'',guest:'',pct:0,remain:'',status:'empty',startTime:null,
-   devices:{listrik_utama:false, lampu_utama:false, lampu_dapur:false, km_exhaust:false, ac:false, tv:false},
-   sensor:{temp:29.8, hum:70, history:[
-     {t:'10:00',temp:29.0,hum:68},{t:'10:30',temp:29.2,hum:68},{t:'11:00',temp:29.4,hum:69},
-     {t:'11:30',temp:29.5,hum:69},{t:'12:00',temp:29.6,hum:70},{t:'12:30',temp:29.7,hum:70},
-     {t:'13:00',temp:29.8,hum:70},{t:'13:30',temp:29.9,hum:71},{t:'14:00',temp:29.8,hum:70}
-   ]}},
-  {id:'104',type:'harian',guest:'Citra Lestari',pct:55,remain:'10j 40m',status:'occupied',startTime:'09:05',
-   devices:{listrik_utama:true, lampu_utama:false, lampu_dapur:true, km_exhaust:false, ac:true, tv:true},
-   sensor:{temp:23.9, hum:52, history:[
-     {t:'10:00',temp:25.5,hum:60},{t:'10:30',temp:25.0,hum:58},{t:'11:00',temp:24.5,hum:56},
-     {t:'11:30',temp:24.2,hum:54},{t:'12:00',temp:24.0,hum:53},{t:'12:30',temp:23.8,hum:52},
-     {t:'13:00',temp:23.9,hum:52},{t:'13:30',temp:23.9,hum:51},{t:'14:00',temp:23.9,hum:52}
-   ]}},
-  {id:'105',type:'perjam',guest:'Doni Kusuma',pct:8,remain:'28m',status:'expiring',startTime:'14:04',
-   devices:{listrik_utama:true, lampu_utama:true, lampu_dapur:false, km_exhaust:true, ac:false, tv:false},
-   sensor:{temp:28.1, hum:64, history:[
-     {t:'10:00',temp:27.2,hum:60},{t:'10:30',temp:27.4,hum:61},{t:'11:00',temp:27.6,hum:61},
-     {t:'11:30',temp:27.8,hum:62},{t:'12:00',temp:27.9,hum:63},{t:'12:30',temp:28.0,hum:63},
-     {t:'13:00',temp:28.0,hum:64},{t:'13:30',temp:28.2,hum:64},{t:'14:00',temp:28.1,hum:64}
-   ]}},
-  {id:'106',type:'',guest:'',pct:0,remain:'',status:'empty',startTime:null,
-   devices:{listrik_utama:false, lampu_utama:false, lampu_dapur:false, km_exhaust:false, ac:false, tv:false},
-   sensor:{temp:30.2, hum:72, history:[
-     {t:'10:00',temp:29.5,hum:69},{t:'10:30',temp:29.6,hum:70},{t:'11:00',temp:29.7,hum:70},
-     {t:'11:30',temp:29.9,hum:71},{t:'12:00',temp:30.0,hum:71},{t:'12:30',temp:30.1,hum:72},
-     {t:'13:00',temp:30.1,hum:72},{t:'13:30',temp:30.3,hum:72},{t:'14:00',temp:30.2,hum:72}
-   ]}},
-  {id:'201',type:'harian',guest:'Eka Putra',pct:90,remain:'1j 5m',status:'occupied',startTime:'13:27',
-   devices:{listrik_utama:true, lampu_utama:false, lampu_dapur:false, km_exhaust:false, ac:true, tv:false},
-   sensor:{temp:23.4, hum:50, history:[
-     {t:'10:00',temp:25.0,hum:58},{t:'10:30',temp:24.5,hum:56},{t:'11:00',temp:24.0,hum:54},
-     {t:'11:30',temp:23.7,hum:53},{t:'12:00',temp:23.5,hum:51},{t:'12:30',temp:23.4,hum:50},
-     {t:'13:00',temp:23.3,hum:50},{t:'13:30',temp:23.4,hum:49},{t:'14:00',temp:23.4,hum:50}
-   ]}},
-  {id:'202',type:'perjam',guest:'Fani Rahma',pct:60,remain:'3j 10m',status:'occupied',startTime:'11:22',
-   devices:{listrik_utama:true, lampu_utama:true, lampu_dapur:true, km_exhaust:false, ac:true, tv:true},
-   sensor:{temp:24.2, hum:55, history:[
-     {t:'10:00',temp:25.6,hum:60},{t:'10:30',temp:25.1,hum:59},{t:'11:00',temp:24.8,hum:58},
-     {t:'11:30',temp:24.5,hum:57},{t:'12:00',temp:24.3,hum:56},{t:'12:30',temp:24.2,hum:55},
-     {t:'13:00',temp:24.1,hum:55},{t:'13:30',temp:24.2,hum:54},{t:'14:00',temp:24.2,hum:55}
-   ]}},
-  {id:'203',type:'',guest:'',pct:0,remain:'',status:'empty',startTime:null,
-   devices:{listrik_utama:false, lampu_utama:false, lampu_dapur:false, km_exhaust:false, ac:false, tv:false},
-   sensor:{temp:29.5, hum:69, history:[
-     {t:'10:00',temp:28.8,hum:66},{t:'10:30',temp:29.0,hum:67},{t:'11:00',temp:29.1,hum:67},
-     {t:'11:30',temp:29.2,hum:68},{t:'12:00',temp:29.3,hum:68},{t:'12:30',temp:29.4,hum:69},
-     {t:'13:00',temp:29.4,hum:69},{t:'13:30',temp:29.6,hum:69},{t:'14:00',temp:29.5,hum:69}
-   ]}},
-  {id:'204',type:'harian',guest:'Galih Wicaksono',pct:40,remain:'14j 20m',status:'occupied',startTime:'00:12',
-   devices:{listrik_utama:true, lampu_utama:true, lampu_dapur:false, km_exhaust:false, ac:false, tv:true},
-   sensor:{temp:26.7, hum:61, history:[
-     {t:'10:00',temp:26.0,hum:58},{t:'10:30',temp:26.1,hum:58},{t:'11:00',temp:26.3,hum:59},
-     {t:'11:30',temp:26.4,hum:60},{t:'12:00',temp:26.5,hum:60},{t:'12:30',temp:26.6,hum:61},
-     {t:'13:00',temp:26.7,hum:61},{t:'13:30',temp:26.8,hum:61},{t:'14:00',temp:26.7,hum:61}
-   ]}},
-  {id:'205',type:'',guest:'',pct:0,remain:'',status:'empty',startTime:null,
-   devices:{listrik_utama:false, lampu_utama:false, lampu_dapur:false, km_exhaust:false, ac:false, tv:false},
-   sensor:{temp:30.0, hum:71, history:[
-     {t:'10:00',temp:29.3,hum:68},{t:'10:30',temp:29.4,hum:69},{t:'11:00',temp:29.6,hum:69},
-     {t:'11:30',temp:29.7,hum:70},{t:'12:00',temp:29.8,hum:70},{t:'12:30',temp:29.9,hum:70},
-     {t:'13:00',temp:29.9,hum:71},{t:'13:30',temp:30.1,hum:71},{t:'14:00',temp:30.0,hum:71}
-   ]}},
-  {id:'206',type:'perjam',guest:'Hana Sari',pct:50,remain:'4j 0m',status:'occupied',startTime:'10:30',
-   devices:{listrik_utama:true, lampu_utama:true, lampu_dapur:false, km_exhaust:false, ac:true, tv:false},
-   sensor:{temp:24.8, hum:57, history:[
-     {t:'10:00',temp:26.2,hum:62},{t:'10:30',temp:25.8,hum:61},{t:'11:00',temp:25.4,hum:60},
-     {t:'11:30',temp:25.1,hum:59},{t:'12:00',temp:24.9,hum:58},{t:'12:30',temp:24.8,hum:57},
-     {t:'13:00',temp:24.7,hum:57},{t:'13:30',temp:24.8,hum:56},{t:'14:00',temp:24.8,hum:57}
-   ]}},
-];
-
-// Device definitions — REVISED:
-// - lampu_kamar + exhaust digabung jadi km_exhaust (1 jalur listrik)
-// - lampu_ruang → lampu_utama
-// - tambah lampu_dapur
-const deviceDefs = [
-  {key:'listrik_utama', label:'Listrik utama',              icon:'⚡', sub:'Main power unit'},
-  {key:'lampu_utama',   label:'Lampu utama',                icon:'💡', sub:'Ruang utama'},
-  {key:'lampu_dapur',   label:'Lampu dapur',                icon:'💡', sub:'Area dapur'},
-  {key:'km_exhaust',    label:'Lampu KM + Exhaust',         icon:'🚿', sub:'1 jalur — otomatis via sensor'},
-  {key:'ac',            label:'AC',                         icon:'❄️', sub:'Dikontrol via IR Blaster'},
-  {key:'tv',            label:'TV',                         icon:'📺', sub:'Dikontrol via IR Blaster'},
-];
-
-const logs = [
-  {type:'green',icon:'✅',text:'Budi Santoso check-in unit 101 via RFID',time:'14:05'},
-  {type:'blue', icon:'⚡',text:'Listrik unit 102 aktif otomatis saat kartu masuk slot',time:'13:55'},
-  {type:'amber',icon:'⏰',text:'Rina Dewi — sewa hampir habis (54 menit lagi)',time:'13:50'},
-  {type:'green',icon:'💳',text:'Pembayaran QRIS Rp 280.000 — unit 204',time:'13:22'},
-  {type:'red',  icon:'🔌',text:'Listrik unit 109 dimatikan otomatis — sewa habis',time:'12:00'},
-  {type:'blue', icon:'❄️',text:'AC unit 201 dinyalakan via AI voice assistant',time:'11:45'},
-  {type:'green',icon:'✅',text:'Kartu RFID A3F2 berhasil didaftarkan untuk unit 103',time:'11:10'},
-  {type:'amber',icon:'⚠️',text:'Sensor HLK-LD2410 unit 102 — orang terdeteksi di KM',time:'10:55'},
-];
-
-const payments = [
-  {guest:'Budi Santoso', unit:'101',type:'Harian',method:'QRIS', amount:'Rp 250.000',time:'14:05'},
-  {guest:'Rina Dewi',    unit:'102',type:'3 Jam', method:'GoPay',amount:'Rp 225.000',time:'13:22'},
-  {guest:'Citra Lestari',unit:'104',type:'Harian',method:'DANA', amount:'Rp 250.000',time:'09:12'},
-  {guest:'Doni Kusuma',  unit:'105',type:'2 Jam', method:'QRIS', amount:'Rp 150.000',time:'08:44'},
-  {guest:'Eka Putra',    unit:'201',type:'Harian',method:'Cash', amount:'Rp 250.000',time:'08:10'},
-];
-
-const rfidCards = [
-  {id:'A3F2-8C1E',guest:'Budi Santoso',    unit:'101',status:'active'},
-  {id:'B7D4-2A90',guest:'Rina Dewi',       unit:'102',status:'active'},
-  {id:'C1E9-5F33',guest:'Citra Lestari',   unit:'104',status:'active'},
-  {id:'D4A1-7B22',guest:'—',               unit:'—',  status:'unassigned'},
-  {id:'E8C3-0D14',guest:'—',               unit:'—',  status:'unassigned'},
-  {id:'F2B6-9E07',guest:'Galih Wicaksono', unit:'204',status:'active'},
-];
-
-const methodIcons = {QRIS:'📱',GoPay:'🟢',DANA:'🔵',Cash:'💵'};
-
-// ══ STATE ══
-let selectedUnitId = null;
+// ══════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════
+let units = [];               // diisi otomatis dari Firebase (bukan dummy lagi)
+let OFFLINE_THRESHOLD_SEC = 15;
 let dashFilter = 'all';
-let sewaType = 'harian';
+let selectedUnitId = null;
+const activityLog = [];       // log perubahan status online/offline, dibangun otomatis
+const prevStatusMap = {};     // untuk mendeteksi perubahan status antar-render
 
-// ══ NAVIGATION ══
+// ══════════════════════════════════════════════════
+// TRANSFORM DATA FIREBASE -> array units
+// ══════════════════════════════════════════════════
+function buildUnitsFromFirebase(rawData) {
+  const now = Math.floor(Date.now() / 1000);
+  return Object.entries(rawData).map(([id, u]) => {
+    const lastSeen = u.last_seen || 0;
+    const isOnline = (now - lastSeen) <= OFFLINE_THRESHOLD_SEC;
+    return {
+      id: id,
+      status: isOnline ? 'online' : 'offline',
+      last_seen: lastSeen,
+      secondsAgo: now - lastSeen
+    };
+  }).sort((a,b) => a.id.localeCompare(b.id));
+}
+
+function logStatusChanges(newUnits) {
+  newUnits.forEach(u => {
+    const prev = prevStatusMap[u.id];
+    if (prev !== undefined && prev !== u.status) {
+      activityLog.unshift({
+        type: u.status === 'online' ? 'green' : 'red',
+        icon: u.status === 'online' ? '✅' : '🔌',
+        text: `Unit ${u.id} berubah status: ${prev} → ${u.status}`,
+        time: new Date().toLocaleTimeString('id-ID', {hour:'2-digit',minute:'2-digit',second:'2-digit'})
+      });
+    }
+    prevStatusMap[u.id] = u.status;
+  });
+  if (activityLog.length > 50) activityLog.length = 50;
+}
+
+// ══════════════════════════════════════════════════
+// MASTER RENDER — dipanggil setiap kali data Firebase berubah
+// ══════════════════════════════════════════════════
+window.renderAll = function() {
+  const raw = window.__firebaseUnits || {};
+  units = buildUnitsFromFirebase(raw);
+  logStatusChanges(units);
+
+  renderMetrics();
+  renderDashGrid();
+  renderLogFull();
+
+  const unitsPage = document.getElementById('page-units');
+  if (unitsPage && unitsPage.classList.contains('active')) {
+    renderUnitsCtrl();
+  }
+};
+
+// refresh tampilan "secondsAgo" tiap detik tanpa perlu data baru dari Firebase
+setInterval(() => {
+  if (window.__firebaseUnits) window.renderAll();
+}, 1000);
+
+// ══════════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════════
 function showPage(id, btn) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');
@@ -632,47 +532,61 @@ function showPage(id, btn) {
   if (btn) btn.classList.add('active');
   const titles = {dashboard:'Dashboard',units:'Kelola Unit',payments:'Pembayaran',rfid:'Manajemen RFID',log:'Log Aktivitas',settings:'Pengaturan'};
   document.getElementById('page-title').textContent = titles[id]||id;
-  if (id==='units')    { selectedUnitId=null; renderUnitsCtrl(); }
-  if (id==='payments') renderPayments();
-  if (id==='rfid')     renderRFID();
-  if (id==='log')      renderLogFull();
+  if (id==='units') { selectedUnitId=null; renderUnitsCtrl(); }
+  if (id==='log')   renderLogFull();
 }
 
-// ══ HELPERS ══
+// ══════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════
 function pillInfo(u) {
-  if (u.status==='expiring') return ['pill-exp','Hampir habis'];
-  if (u.status==='occupied') return ['pill-occ','Terisi'];
-  return ['pill-empty','Kosong'];
-}
-function progClass(pct) {
-  if (pct>=90) return 'prog-red';
-  if (pct>=70) return 'prog-amber';
-  return 'prog-blue';
+  if (u.status === 'online')  return ['pill-occ', '🟢 Online'];
+  return ['pill-off', '🔴 Offline'];
 }
 
-// ══ DASHBOARD — read-only cards ══
+function fmtAgo(sec) {
+  if (sec < 60) return sec + ' detik lalu';
+  if (sec < 3600) return Math.floor(sec/60) + ' menit lalu';
+  return Math.floor(sec/3600) + ' jam lalu';
+}
+
+// ══════════════════════════════════════════════════
+// METRICS
+// ══════════════════════════════════════════════════
+function renderMetrics() {
+  const total = units.length;
+  const online = units.filter(u => u.status==='online').length;
+  const offline = total - online;
+  document.getElementById('metric-total').textContent = total;
+  document.getElementById('metric-online').textContent = online;
+  document.getElementById('metric-offline').textContent = offline;
+  document.getElementById('metric-lastupdate').textContent = new Date().toLocaleTimeString('id-ID');
+}
+
+// ══════════════════════════════════════════════════
+// DASHBOARD — read-only cards
+// ══════════════════════════════════════════════════
 function dashCardHTML(u) {
   const [pillCls,pillLbl] = pillInfo(u);
   return `<div class="unit-card-ro">
     <div class="unit-head">
-      <div class="unit-num">🚪 Unit ${u.id}</div>
+      <div class="unit-num">📟 ${u.id}</div>
       <span class="pill ${pillCls}">${pillLbl}</span>
     </div>
-    ${u.guest
-      ? `<div class="unit-guest">👤 ${u.guest}<span class="unit-type-badge">${u.type}</span></div>`
-      : `<div class="unit-guest" style="color:var(--text3)">Tidak ada tamu</div>`}
-    ${u.status!=='empty'
-      ? `<div class="progress-wrap"><div class="progress-bar ${progClass(u.pct)}" style="width:${u.pct}%"></div></div>
-         <div class="unit-remain">sisa ${u.remain}</div>`
-      : `<div style="height:19px;color:var(--text3);font-size:11px">—</div>`}
+    <div class="unit-guest" style="color:var(--text3)">
+      ${u.status==='online' ? 'Heartbeat aktif' : 'Tidak ada heartbeat'}
+    </div>
+    <div class="unit-remain">${fmtAgo(u.secondsAgo)}</div>
   </div>`;
 }
 
 function renderDashGrid() {
   const filtered = units.filter(u => dashFilter==='all' || u.status===dashFilter);
-  document.getElementById('dash-grid').innerHTML =
+  const gridEl = document.getElementById('dash-grid');
+  if (!gridEl) return;
+  gridEl.innerHTML =
     filtered.length ? filtered.map(dashCardHTML).join('') :
-    '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🔍</div>Tidak ada unit dengan filter ini</div>';
+    '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">📡</div>Belum ada unit ESP32-S3 yang terhubung ke Firebase</div>';
 }
 
 function filterDash(f, btn) {
@@ -682,292 +596,70 @@ function filterDash(f, btn) {
   renderDashGrid();
 }
 
-function renderDashLog() {
-  document.getElementById('dash-log').innerHTML = logs.slice(0,5).map(logItemHTML).join('');
-}
-
-// ══ KELOLA UNIT ══
+// ══════════════════════════════════════════════════
+// KELOLA UNIT — klik untuk detail koneksi
+// ══════════════════════════════════════════════════
 function ctrlCardHTML(u) {
   const [pillCls,pillLbl] = pillInfo(u);
   const isSel = selectedUnitId===u.id;
   return `<div class="unit-card-ctrl${isSel?' selected':''}" onclick="selectUnit('${u.id}')">
     <div class="unit-head">
-      <div class="unit-num">🚪 Unit ${u.id}</div>
+      <div class="unit-num">📟 ${u.id}</div>
       <span class="pill ${pillCls}">${pillLbl}</span>
     </div>
-    ${u.guest
-      ? `<div class="unit-guest">👤 ${u.guest}<span class="unit-type-badge">${u.type}</span></div>`
-      : `<div class="unit-guest" style="color:var(--text3)">Tidak ada tamu</div>`}
-    ${u.status!=='empty'
-      ? `<div class="progress-wrap"><div class="progress-bar ${progClass(u.pct)}" style="width:${u.pct}%"></div></div>
-         <div class="unit-remain" style="margin-bottom:2px">sisa ${u.remain}</div>`
-      : `<div style="height:21px"></div>`}
+    <div class="unit-guest" style="color:var(--text3)">${fmtAgo(u.secondsAgo)}</div>
     <div style="margin-top:6px;font-size:11px;color:${isSel?'var(--blue-text)':'var(--text3)'}">
-      ${isSel ? '▲ Panel kontrol terbuka di bawah' : 'Klik untuk kontrol →'}
+      ${isSel ? '▲ Detail terbuka di bawah' : 'Klik untuk detail →'}
     </div>
   </div>`;
 }
 
 function renderUnitsCtrl() {
-  document.getElementById('unit-grid-ctrl').innerHTML = units.map(ctrlCardHTML).join('');
+  const gridEl = document.getElementById('unit-grid-ctrl');
+  if (!gridEl) return;
+  gridEl.innerHTML = units.length
+    ? units.map(ctrlCardHTML).join('')
+    : '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">📡</div>Belum ada unit terdaftar di Firebase</div>';
   renderUnitDetail();
 }
 
 function selectUnit(id) {
   selectedUnitId = selectedUnitId===id ? null : id;
   renderUnitsCtrl();
-  if (selectedUnitId) {
-    setTimeout(() => {
-      document.getElementById('unit-detail-container').scrollIntoView({behavior:'smooth',block:'nearest'});
-    }, 80);
-  }
 }
 
-// ══ SENSOR DHT22 — kartu ringkasan + grafik SVG ══
-function sensorStatusInfo(temp) {
-  if (temp>=29) return {color:'var(--red-text)',  label:'Panas'};
-  if (temp>=27) return {color:'var(--amber-text)',label:'Hangat'};
-  return {color:'var(--green-text)',label:'Normal'};
-}
-
-function buildSensorChartSVG(history) {
-  const W=320, H=130, padL=30, padR=8, padT=10, padB=20;
-  const plotW = W - padL - padR, plotH = H - padT - padB;
-  const n = history.length;
-
-  const temps = history.map(h=>h.temp);
-  const hums  = history.map(h=>h.hum);
-  const tMin = Math.floor(Math.min(...temps)-1), tMax = Math.ceil(Math.max(...temps)+1);
-  const hMin = Math.floor(Math.min(...hums)-5),  hMax = Math.ceil(Math.max(...hums)+5);
-
-  const xFor = i => padL + (plotW * i/(n-1));
-  const yForTemp = v => padT + plotH - ((v - tMin)/(tMax - tMin)) * plotH;
-  const yForHum  = v => padT + plotH - ((v - hMin)/(hMax - hMin)) * plotH;
-
-  const tempPts = history.map((h,i)=>`${xFor(i).toFixed(1)},${yForTemp(h.temp).toFixed(1)}`).join(' ');
-  const humPts  = history.map((h,i)=>`${xFor(i).toFixed(1)},${yForHum(h.hum).toFixed(1)}`).join(' ');
-
-  // gridlines (horizontal, 3 garis)
-  let gridLines = '';
-  for (let g=0; g<=2; g++) {
-    const y = padT + (plotH/2)*g;
-    gridLines += `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W-padR}" y2="${y.toFixed(1)}" stroke="var(--border)" stroke-width="1"/>`;
-  }
-
-  // x-axis labels: tampilkan awal, tengah, akhir
-  const labelIdxs = [0, Math.floor((n-1)/2), n-1];
-  let xLabels = '';
-  labelIdxs.forEach(i=>{
-    xLabels += `<text x="${xFor(i).toFixed(1)}" y="${H-4}" font-size="9" fill="var(--text3)" text-anchor="middle" font-family="JetBrains Mono, monospace">${history[i].t}</text>`;
-  });
-
-  // dot di titik terakhir
-  const lastX = xFor(n-1), lastTY = yForTemp(temps[n-1]), lastHY = yForHum(hums[n-1]);
-
-  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
-    ${gridLines}
-    <polyline points="${humPts}" fill="none" stroke="var(--cyan)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" opacity="0.9"/>
-    <polyline points="${tempPts}" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
-    <circle cx="${lastX.toFixed(1)}" cy="${lastHY.toFixed(1)}" r="3" fill="var(--cyan)"/>
-    <circle cx="${lastX.toFixed(1)}" cy="${lastTY.toFixed(1)}" r="3" fill="var(--amber)"/>
-    ${xLabels}
-  </svg>`;
-}
-
-function sensorSectionHTML(u) {
-  const s = u.sensor;
-  const st = sensorStatusInfo(s.temp);
-  return `<div class="sensor-section">
-    <div class="detail-col-title">🌡️ Suhu &amp; Kelembaban (DHT22)</div>
-    <div class="sensor-status-row">
-      <span class="pill" style="background:var(--bg4);color:${st.color}">${st.label}</span>
-      <span class="sensor-meta">update terakhir 14:00</span>
-    </div>
-    <div class="sensor-grid">
-      <div class="sensor-card temp" onclick="openSensorDetail('${u.id}')" title="Klik untuk detail per-menit">
-        <span class="sensor-icon">🌡️</span>
-        <div>
-          <div class="sensor-val">${s.temp.toFixed(1)}°C</div>
-          <div class="sensor-label">Suhu ruangan</div>
-        </div>
-      </div>
-      <div class="sensor-card hum" onclick="openSensorDetail('${u.id}')" title="Klik untuk detail per-menit">
-        <span class="sensor-icon">💧</span>
-        <div>
-          <div class="sensor-val">${s.hum}%</div>
-          <div class="sensor-label">Kelembaban</div>
-        </div>
-      </div>
-    </div>
-    <div class="chart-wrap" onclick="openSensorDetail('${u.id}')" title="Klik untuk detail per-menit">
-      ${buildSensorChartSVG(s.history)}
-      <div class="chart-legend">
-        <span class="chart-legend-item"><span class="chart-legend-dot" style="background:var(--amber)"></span>Suhu (°C)</span>
-        <span class="chart-legend-item"><span class="chart-legend-dot" style="background:var(--cyan)"></span>Kelembaban (%)</span>
-      </div>
-    </div>
-    <div class="chart-hint">🔍 Klik grafik untuk lihat detail per-menit sejak kamar terisi</div>
-  </div>`;
-}
-
-// ══ UNIT DETAIL PANEL ══
 function renderUnitDetail() {
   const container = document.getElementById('unit-detail-container');
+  if (!container) return;
   if (!selectedUnitId) { container.innerHTML=''; return; }
   const u = units.find(x=>x.id===selectedUnitId);
+  if (!u) { container.innerHTML=''; return; }
 
-  // ── Info sewa col ──
-  const sewaCol = u.status!=='empty' ? `
-    <div class="sewa-info-row"><span class="sewa-info-label">Tamu</span><span class="sewa-info-val">${u.guest}</span></div>
-    <div class="sewa-info-row"><span class="sewa-info-label">Tipe sewa</span><span class="sewa-info-val">${u.type}</span></div>
-    <div class="sewa-info-row"><span class="sewa-info-label">Status</span>
-      <span class="sewa-info-val" style="color:${u.status==='expiring'?'var(--amber-text)':'var(--green-text)'}">
-        ${u.status==='expiring'?'⚠️ Hampir habis':'✅ Aktif'}
-      </span>
-    </div>
-    <div class="timer-big">
-      <div class="timer-num">${u.remain}</div>
-      <div class="timer-label">sisa waktu sewa</div>
-      <div class="timer-bar-full"><div class="timer-bar-fill ${progClass(u.pct)}" style="width:${u.pct}%"></div></div>
-    </div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap">
-      <button class="btn-confirm" style="flex:1;padding:8px" onclick="openModal('perpanjang','${u.id}')">Perpanjang sewa</button>
-      <button class="btn-xs red" style="padding:8px 12px" onclick="cutSewa('${u.id}')">⏹ Cut sewa</button>
-    </div>` :
-    `<div class="empty-state" style="padding:20px 0">
-      <div class="empty-icon">🚪</div>
-      <div style="margin-bottom:12px">Unit kosong</div>
-    </div>
-    <button class="btn-confirm" style="width:100%" onclick="openModal('sewa','${u.id}')">+ Buat Sewa Baru</button>`;
-
-  // ── Device control col ──
-  // Build device rows — km_exhaust punya note sensor otomatis
-  const devRows = deviceDefs.map(def => {
-    const isOn = u.devices[def.key];
-    const isAuto = def.key === 'km_exhaust'; // dikontrol sensor, tapi bisa override
-    return `<div class="dev-row">
-      <div>
-        <div class="dev-name">${def.icon} ${def.label}</div>
-        ${isAuto ? `<div class="dev-sub">Auto via sensor · bisa override</div>` : `<div class="dev-sub">${def.sub}</div>`}
-      </div>
-      <div class="dev-right">
-        <span class="dev-state ${isOn?'on':''}">${isOn?'ON':'OFF'}</span>
-        <label class="toggle-wrap">
-          <input type="checkbox" ${isOn?'checked':''} onchange="toggleDev('${u.id}','${def.key}',this)"/>
-          <div class="toggle-track"></div>
-        </label>
-      </div>
-    </div>`;
-  }).join('');
-
-  // IR buttons — AC: 3 tombol saja (Power, Suhu+, Suhu-)
-  const acBtns = [
-    {icon:'⏻', l:'Power AC'},
-    {icon:'🌡️+', l:'Suhu +'},
-    {icon:'🌡️-', l:'Suhu -'},
-  ];
-  const tvBtns = [
-    {icon:'⏻',  l:'Power TV'},
-    {icon:'🔊+', l:'Vol +'},
-    {icon:'🔉-', l:'Vol -'},
-    {icon:'⏭️',  l:'Ch +'},
-    {icon:'⏮️',  l:'Ch -'},
-    {icon:'🔇',  l:'Mute'},
-  ];
-  const irAC = acBtns.map(b=>`<button class="ir-btn" onclick="sendIR('AC','${b.l}')"><span class="ir-btn-icon">${b.icon}</span>${b.l}</button>`).join('');
-  const irTV = tvBtns.map(b=>`<button class="ir-btn" onclick="sendIR('TV','${b.l}')"><span class="ir-btn-icon">${b.icon}</span>${b.l}</button>`).join('');
-
-  // ── Log & RFID col ──
-  const unitLogs = logs.filter(l=>l.text.includes('unit '+u.id)).slice(0,6);
-  const logHTML = unitLogs.length ? unitLogs.map(logItemHTML).join('') :
-    '<div class="empty-state"><div class="empty-icon">📋</div>Belum ada log</div>';
-
-  const unitRFID = rfidCards.filter(c=>c.unit===u.id);
-  const rfidHTML = unitRFID.length
-    ? unitRFID.map(c=>`
-        <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
-          <span style="font-size:16px">📡</span>
-          <div style="flex:1"><div class="rfid-id">${c.id}</div><div class="rfid-guest">${c.guest}</div></div>
-          <span class="pill pill-occ">Aktif</span>
-          <button class="btn-xs red" onclick="showToast('Akses kartu ${c.id} dicabut','error')">Cabut</button>
-        </div>`).join('')
-    : `<div style="color:var(--text3);font-size:12px;padding:8px 0">Belum ada kartu terdaftar</div>
-       <button class="btn-xs blue" style="margin-top:8px" onclick="showToast('Scan kartu pada reader pintu unit ${u.id}...','info')">+ Daftarkan kartu</button>`;
+  const [pillCls,pillLbl] = pillInfo(u);
 
   container.innerHTML = `
     <div class="unit-detail-wrap" style="margin-top:16px">
       <div class="unit-detail-header">
         <div class="unit-detail-title">
-          🏠 Unit ${u.id} — Panel Kontrol Penuh
-          <span class="pill ${u.status==='occupied'?'pill-occ':u.status==='expiring'?'pill-exp':'pill-empty'}">
-            ${u.status==='occupied'?'Terisi':u.status==='expiring'?'Hampir Habis':'Kosong'}
-          </span>
+          📟 Unit ${u.id} — Detail Koneksi
+          <span class="pill ${pillCls}">${pillLbl}</span>
         </div>
-        <button class="btn-xs" onclick="selectUnit('${u.id}')">✕ Tutup panel</button>
+        <button class="btn-xs" onclick="selectUnit('${u.id}')">✕ Tutup</button>
       </div>
-
-      <div class="unit-detail-body">
-
-        <!-- Col 1: Info sewa -->
-        <div class="detail-col">
-          <div class="detail-col-title">⏱️ Info Sewa</div>
-          ${sewaCol}
-          ${sensorSectionHTML(u)}
+      <div class="unit-detail-body" style="grid-template-columns:1fr">
+        <div class="detail-col" style="border-right:none">
+          <div class="sewa-info-row"><span class="sewa-info-label">Device ID</span><span class="sewa-info-val">${u.id}</span></div>
+          <div class="sewa-info-row"><span class="sewa-info-label">Status</span><span class="sewa-info-val">${u.status}</span></div>
+          <div class="sewa-info-row"><span class="sewa-info-label">Heartbeat terakhir</span><span class="sewa-info-val">${fmtAgo(u.secondsAgo)}</span></div>
+          <div class="sewa-info-row"><span class="sewa-info-label">Unix timestamp</span><span class="sewa-info-val">${u.last_seen}</span></div>
         </div>
-
-        <!-- Col 2: Kontrol perangkat + IR -->
-        <div class="detail-col">
-          <div class="detail-col-title">🔌 Kontrol Perangkat</div>
-          ${devRows}
-          <div class="ir-section">
-            <div class="ir-label">AC Control</div>
-            <div class="ir-grid ir-grid-3">${irAC}</div>
-            <div class="ir-label">TV Control</div>
-            <div class="ir-grid ir-grid-3">${irTV}</div>
-          </div>
-        </div>
-
-        <!-- Col 3: Log + RFID -->
-        <div class="detail-col">
-          <div class="detail-col-title">📋 Log Unit ${u.id}</div>
-          ${logHTML}
-          <div style="margin-top:16px">
-            <div class="detail-col-title">📡 Kartu RFID Unit ${u.id}</div>
-            ${rfidHTML}
-          </div>
-        </div>
-
       </div>
     </div>`;
 }
 
-function toggleDev(uid, key, el) {
-  const u = units.find(x=>x.id===uid);
-  u.devices[key] = el.checked;
-  const row = el.closest('.dev-row');
-  const st = row.querySelector('.dev-state');
-  st.textContent = el.checked?'ON':'OFF';
-  st.className = 'dev-state'+(el.checked?' on':'');
-  const def = deviceDefs.find(d=>d.key===key);
-  showToast(`${def.label} unit ${uid} — ${el.checked?'dinyalakan':'dimatikan'}`, el.checked?'success':'info');
-}
-
-function sendIR(device, cmd) {
-  showToast(`IR dikirim ke ${device}: ${cmd}`, 'info');
-}
-
-function cutSewa(uid) {
-  if (!confirm('Yakin cut sewa unit '+uid+'?\nListrik dan semua perangkat akan langsung dimatikan.')) return;
-  const u = units.find(x=>x.id===uid);
-  Object.keys(u.devices).forEach(k=>u.devices[k]=false);
-  u.status='empty'; u.guest=''; u.type=''; u.pct=0; u.remain=''; u.startTime=null;
-  selectedUnitId=null;
-  renderUnitsCtrl();
-  renderDashGrid();
-  showToast('Sewa unit '+uid+' diakhiri — semua perangkat dimatikan','error');
-}
-
-// ══ LOG ══
+// ══════════════════════════════════════════════════
+// LOG
+// ══════════════════════════════════════════════════
 function logItemHTML(l) {
   return `<div class="log-item">
     <div class="log-dot ${l.type}">${l.icon}</div>
@@ -975,302 +667,16 @@ function logItemHTML(l) {
   </div>`;
 }
 function renderLogFull() {
-  document.getElementById('log-full').innerHTML = logs.map(logItemHTML).join('');
+  const el = document.getElementById('log-full');
+  if (!el) return;
+  el.innerHTML = activityLog.length
+    ? activityLog.map(logItemHTML).join('')
+    : '<div class="empty-state"><div class="empty-icon">📋</div>Belum ada perubahan status tercatat</div>';
 }
 
-// ══ PAYMENTS ══
-function renderPayments() {
-  document.getElementById('pay-list').innerHTML = payments.map(p=>`
-    <div class="pay-item">
-      <div class="pay-method">${methodIcons[p.method]||'💳'}</div>
-      <div class="pay-body">
-        <div class="pay-guest">${p.guest} <span style="color:var(--text3)">· Unit ${p.unit} · ${p.type}</span></div>
-        <div class="pay-detail">${p.method} · ${p.time}</div>
-      </div>
-      <div class="pay-amount">${p.amount}</div>
-    </div>`).join('');
-}
-
-// ══ RFID ══
-function renderRFID() {
-  document.getElementById('rfid-list').innerHTML = rfidCards.map(c=>`
-    <div class="rfid-item">
-      <span style="font-size:18px">📡</span>
-      <div style="flex:1">
-        <div class="rfid-id">${c.id}</div>
-        <div class="rfid-guest">${c.guest!=='—'?c.guest+' · Unit '+c.unit:'Belum ditetapkan'}</div>
-      </div>
-      <span class="pill ${c.status==='active'?'pill-occ':'pill-empty'}">${c.status==='active'?'Aktif':'Kosong'}</span>
-      <button class="btn-xs red" style="margin-left:8px" onclick="showToast('Akses kartu ${c.id} dicabut','error')">Cabut</button>
-    </div>`).join('');
-}
-
-// ══ MODAL ══
-function openModal(mode, uid) {
-  const u = uid ? units.find(x=>x.id===uid) : null;
-  sewaType = 'harian';
-  const titles = {sewa:'Buat sewa baru — Unit '+uid, perpanjang:'Perpanjang sewa — Unit '+uid, add:'Tambah unit baru'};
-  document.getElementById('modal-title').textContent = titles[mode];
-
-  if (mode==='add') {
-    document.getElementById('modal-body').innerHTML = `
-      <div class="form-group"><label class="form-label">Nomor unit</label><input type="text" placeholder="mis. 301"/></div>
-      <div class="form-group"><label class="form-label">Lantai</label><input type="number" value="3"/></div>
-      <div class="modal-actions">
-        <button class="btn-cancel" onclick="closeModal()">Batal</button>
-        <button class="btn-confirm" onclick="closeModal();showToast('Unit berhasil ditambahkan','success')">Tambah unit</button>
-      </div>`;
-  } else {
-    document.getElementById('modal-body').innerHTML = `
-      <div class="form-group">
-        <label class="form-label">Nama tamu</label>
-        <input type="text" id="inp-guest" placeholder="Nama lengkap tamu" value="${u&&u.guest?u.guest:''}"/>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Tipe sewa</label>
-        <div class="type-grid">
-          <div class="type-opt sel" id="opt-harian" onclick="setSewaType('harian')">
-            <div class="type-opt-icon">📅</div>
-            <div class="type-opt-name">Harian</div>
-            <div class="type-opt-sub">12.00 → 12.00</div>
-          </div>
-          <div class="type-opt" id="opt-perjam" onclick="setSewaType('perjam')">
-            <div class="type-opt-icon">⏱️</div>
-            <div class="type-opt-name">Per jam</div>
-            <div class="type-opt-sub">bebas durasi</div>
-          </div>
-        </div>
-      </div>
-      <div class="form-group" id="row-jam" style="display:none">
-        <div class="two-col">
-          <div><label class="form-label">Jam mulai</label><input type="time" value="14:00" id="inp-mulai"/></div>
-          <div><label class="form-label">Durasi (jam)</label><input type="number" min="1" max="24" value="3" id="inp-durasi" oninput="updatePrice()"/></div>
-        </div>
-      </div>
-      <div class="form-group"><label class="form-label">Tanggal mulai</label><input type="date" value="${new Date().toISOString().slice(0,10)}"/></div>
-      <div class="price-preview">
-        <span class="price-label">Total tagihan</span>
-        <span class="price-val" id="price-val">Rp 250.000</span>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Metode pembayaran</label>
-        <select><option>QRIS</option><option>GoPay</option><option>DANA</option><option>Cash</option></select>
-      </div>
-      <div class="modal-actions">
-        <button class="btn-cancel" onclick="closeModal()">Batal</button>
-        <button class="btn-confirm" onclick="confirmSewa('${uid}','${mode}')">Konfirmasi sewa</button>
-      </div>`;
-  }
-  document.getElementById('modal').style.display='flex';
-}
-
-function setSewaType(t) {
-  sewaType = t;
-  document.getElementById('opt-harian').className='type-opt'+(t==='harian'?' sel':'');
-  document.getElementById('opt-perjam').className ='type-opt'+(t==='perjam'?' sel':'');
-  document.getElementById('row-jam').style.display = t==='perjam'?'block':'none';
-  updatePrice();
-}
-
-function updatePrice() {
-  if (sewaType==='harian') { document.getElementById('price-val').textContent='Rp 250.000'; return; }
-  const dur = parseInt(document.getElementById('inp-durasi')?.value)||1;
-  document.getElementById('price-val').textContent='Rp '+(dur*75000).toLocaleString('id-ID');
-}
-
-function confirmSewa(uid, mode) {
-  const g = document.getElementById('inp-guest')?.value.trim();
-  if (!g) { showToast('Nama tamu wajib diisi','error'); return; }
-  const u = units.find(x=>x.id===uid);
-  if (u) {
-    u.status='occupied'; u.guest=g; u.type=sewaType; u.pct=5;
-    u.remain = sewaType==='harian'?'23j 55m':(parseInt(document.getElementById('inp-durasi')?.value)||3)+'j 0m';
-    u.devices.listrik_utama=true;
-    if (!u.startTime) {
-      const hh = String(Math.floor(NOW_MINUTES/60)).padStart(2,'0');
-      const mm = String(NOW_MINUTES%60).padStart(2,'0');
-      u.startTime = `${hh}:${mm}`;
-    }
-  }
-  closeModal();
-  renderUnitsCtrl();
-  renderDashGrid();
-  showToast(`Sewa unit ${uid} dikonfirmasi — listrik aktif`,'success');
-}
-
-function closeModal()         { document.getElementById('modal').style.display='none'; }
-function closeModalOutside(e) { if(e.target===document.getElementById('modal')) closeModal(); }
-
-// ══ SENSOR DETAIL MODAL — rentang 1 menit, sejak kamar terisi s/d sekarang ══
-
-// Generator angka pseudo-random tapi deterministik (berdasarkan seed string),
-// supaya grafik tidak berubah-ubah setiap kali dibuka untuk unit yang sama.
-function seededNoise(seedStr, idx) {
-  let h = 0;
-  const s = seedStr + '-' + idx;
-  for (let i=0;i<s.length;i++){ h = (h*31 + s.charCodeAt(i)) | 0; }
-  // pseudo-random terdistribusi -1..1
-  const x = Math.sin(h) * 10000;
-  return x - Math.floor(x);
-}
-
-function timeStrToMinutes(str) {
-  const [h,m] = str.split(':').map(Number);
-  return h*60+m;
-}
-function minutesToTimeStr(mins) {
-  const m = ((mins % 1440) + 1440) % 1440;
-  const hh = String(Math.floor(m/60)).padStart(2,'0');
-  const mm = String(m%60).padStart(2,'0');
-  return `${hh}:${mm}`;
-}
-
-// Bangun rangkaian data per-menit dari startTime unit hingga NOW_MINUTES,
-// menggunakan titik history (per 30 menit) milik unit sebagai acuan tren,
-// lalu diisi noise halus per-menit agar tampak seperti data sensor asli.
-function buildPerMinuteHistory(u) {
-  if (!u.startTime) return [];
-  const startMin = timeStrToMinutes(u.startTime);
-  const endMin = NOW_MINUTES;
-  const totalMin = Math.max(1, endMin - startMin);
-
-  const anchors = u.sensor.history; // titik tiap 30 menit, 10:00 → 14:00
-  const anchorMin = anchors.map(a => timeStrToMinutes(a.t));
-
-  function interp(arr, key, atMin) {
-    if (atMin <= anchorMin[0]) return arr[0][key];
-    if (atMin >= anchorMin[anchorMin.length-1]) return arr[arr.length-1][key];
-    for (let i=0;i<anchorMin.length-1;i++){
-      if (atMin >= anchorMin[i] && atMin <= anchorMin[i+1]) {
-        const ratio = (atMin - anchorMin[i]) / (anchorMin[i+1] - anchorMin[i]);
-        return arr[i][key] + (arr[i+1][key]-arr[i][key]) * ratio;
-      }
-    }
-    return arr[arr.length-1][key];
-  }
-
-  const out = [];
-  for (let m = startMin; m <= endMin; m++) {
-    const baseTemp = interp(anchors, 'temp', m);
-    const baseHum  = interp(anchors, 'hum', m);
-    const nTemp = (seededNoise(u.id+'-t', m) - 0.5) * 0.3; // ±0.15°C noise halus
-    const nHum  = (seededNoise(u.id+'-h', m) - 0.5) * 1.2; // ±0.6% noise halus
-    out.push({
-      t: minutesToTimeStr(m),
-      minIndex: m - startMin,
-      temp: Math.round((baseTemp + nTemp)*10)/10,
-      hum: Math.round((baseHum + nHum)*10)/10
-    });
-  }
-  return out;
-}
-
-// Bangun SVG chart tunggal (1 metrik) dari array data per-menit
-function buildSingleMetricSVG(data, key, color, unitLabel, yPad) {
-  const W=620, H=180, padL=38, padR=10, padT=12, padB=24;
-  const plotW = W - padL - padR, plotH = H - padT - padB;
-  const n = data.length;
-  if (n < 2) {
-    return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
-      <text x="${W/2}" y="${H/2}" font-size="12" fill="var(--text3)" text-anchor="middle">Data belum cukup</text>
-    </svg>`;
-  }
-
-  const vals = data.map(d=>d[key]);
-  const vMin = Math.floor(Math.min(...vals) - yPad);
-  const vMax = Math.ceil(Math.max(...vals) + yPad);
-
-  const xFor = i => padL + (plotW * i/(n-1));
-  const yFor = v => padT + plotH - ((v - vMin)/(vMax - vMin)) * plotH;
-
-  const pts = data.map((d,i)=>`${xFor(i).toFixed(1)},${yFor(d[key]).toFixed(1)}`).join(' ');
-
-  // area fill di bawah garis
-  const areaPts = `${xFor(0).toFixed(1)},${(padT+plotH).toFixed(1)} ${pts} ${xFor(n-1).toFixed(1)},${(padT+plotH).toFixed(1)}`;
-
-  // gridlines horizontal (4 garis) + label nilai
-  let gridLines = '';
-  const steps = 3;
-  for (let g=0; g<=steps; g++) {
-    const y = padT + (plotH/steps)*g;
-    const val = vMax - ((vMax-vMin)/steps)*g;
-    gridLines += `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W-padR}" y2="${y.toFixed(1)}" stroke="var(--border)" stroke-width="1"/>`;
-    gridLines += `<text x="${padL-6}" y="${(y+3).toFixed(1)}" font-size="9" fill="var(--text3)" text-anchor="end" font-family="JetBrains Mono, monospace">${val.toFixed(1)}</text>`;
-  }
-
-  // x labels: tampilkan beberapa titik waktu saja agar tidak padat (maks 6 label)
-  const labelCount = Math.min(6, n);
-  let xLabels = '';
-  for (let k=0;k<labelCount;k++){
-    const idx = Math.round((n-1) * k/(labelCount-1||1));
-    xLabels += `<text x="${xFor(idx).toFixed(1)}" y="${H-6}" font-size="9" fill="var(--text3)" text-anchor="middle" font-family="JetBrains Mono, monospace">${data[idx].t}</text>`;
-  }
-
-  const lastX = xFor(n-1), lastY = yFor(vals[n-1]);
-
-  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
-    ${gridLines}
-    <polygon points="${areaPts}" fill="${color}" opacity="0.10"/>
-    <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
-    <circle cx="${lastX.toFixed(1)}" cy="${lastY.toFixed(1)}" r="3.5" fill="${color}"/>
-    ${xLabels}
-  </svg>`;
-}
-
-function statBlock(label, val) {
-  return `<div class="sensor-modal-stat">
-    <div class="sensor-modal-stat-val">${val}</div>
-    <div class="sensor-modal-stat-lbl">${label}</div>
-  </div>`;
-}
-
-function openSensorDetail(uid) {
-  const u = units.find(x=>x.id===uid);
-  if (!u || !u.startTime) {
-    showToast('Unit kosong — belum ada riwayat sensor untuk ditampilkan','info');
-    return;
-  }
-
-  const data = buildPerMinuteHistory(u);
-  const temps = data.map(d=>d.temp);
-  const hums  = data.map(d=>d.hum);
-
-  document.getElementById('sensor-modal-title').innerHTML = `🌡️ Detail Suhu &amp; Kelembaban — Unit ${u.id}`;
-  document.getElementById('sensor-modal-sub').textContent =
-    `Rentang per menit · ${u.startTime} (mulai sewa) → ${minutesToTimeStr(NOW_MINUTES)} (sekarang) · ${data.length} titik data`;
-
-  const tempSVG = buildSingleMetricSVG(data, 'temp', 'var(--amber)', '°C', 0.5);
-  const humSVG  = buildSingleMetricSVG(data, 'hum',  'var(--cyan)',  '%',  2);
-
-  document.getElementById('sensor-modal-body').innerHTML = `
-    <div class="sensor-modal-section">
-      <div class="sensor-modal-section-title" style="color:var(--amber-text)">🌡️ Suhu Ruangan (°C)</div>
-      <div class="sensor-modal-stats">
-        ${statBlock('Min', Math.min(...temps).toFixed(1)+'°C')}
-        ${statBlock('Rata-rata', (temps.reduce((a,b)=>a+b,0)/temps.length).toFixed(1)+'°C')}
-        ${statBlock('Maks', Math.max(...temps).toFixed(1)+'°C')}
-        ${statBlock('Sekarang', temps[temps.length-1].toFixed(1)+'°C')}
-      </div>
-      <div class="sensor-modal-chart-wrap">${tempSVG}</div>
-    </div>
-    <div class="sensor-modal-section" style="margin-bottom:0">
-      <div class="sensor-modal-section-title" style="color:var(--cyan-text)">💧 Kelembaban (%)</div>
-      <div class="sensor-modal-stats">
-        ${statBlock('Min', Math.min(...hums).toFixed(1)+'%')}
-        ${statBlock('Rata-rata', (hums.reduce((a,b)=>a+b,0)/hums.length).toFixed(1)+'%')}
-        ${statBlock('Maks', Math.max(...hums).toFixed(1)+'%')}
-        ${statBlock('Sekarang', hums[hums.length-1].toFixed(1)+'%')}
-      </div>
-      <div class="sensor-modal-chart-wrap">${humSVG}</div>
-    </div>`;
-
-  document.getElementById('sensor-modal').style.display='flex';
-}
-
-function closeSensorModal()         { document.getElementById('sensor-modal').style.display='none'; }
-function closeSensorModalOutside(e) { if(e.target===document.getElementById('sensor-modal')) closeSensorModal(); }
-
-// ══ TOAST ══
+// ══════════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════════
 function showToast(msg, type='info') {
   const icons={success:'✅',error:'❌',info:'ℹ️'};
   const el=document.createElement('div');
@@ -1280,9 +686,16 @@ function showToast(msg, type='info') {
   setTimeout(()=>el.remove(),3500);
 }
 
-// ══ INIT ══
+// expose ke global scope supaya bisa dipanggil dari onclick= di HTML
+window.showPage = showPage;
+window.filterDash = filterDash;
+window.selectUnit = selectUnit;
+window.showToast = showToast;
+
+// render awal (kosong, menunggu data Firebase masuk)
+renderMetrics();
 renderDashGrid();
-renderDashLog();
+renderLogFull();
 </script>
 </body>
 </html>
