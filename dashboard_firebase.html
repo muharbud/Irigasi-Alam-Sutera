@@ -1,0 +1,1414 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel Kontrol Energi — Buona Cita</title>
+<style>
+:root{ --bg:#070a11; --panel:#0d121e; --border:#1c2740; --cyan:#22d3ee; --magenta:#c084fc; --amber:#f5a623; --red:#ff3b3b; --green:#22e07a; --blue:#2f8dff; --yellow:#fde047; --orange:#f97316; --text:#dbe4f0; --muted:#5c6b85; }
+*{box-sizing:border-box;margin:0;padding:0;}
+body{min-height:100vh;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;overflow-x:hidden;}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;}
+.fx{position:relative;overflow:hidden;}
+.ripple{position:absolute;border-radius:50%;background:#ffffff44;transform:scale(0);animation:rippleAnim .6s ease-out;pointer-events:none;}
+@keyframes rippleAnim{to{transform:scale(2.6);opacity:0;}}
+.logo-badge{width:40px;height:40px;flex-shrink:0;filter:drop-shadow(0 0 10px #22d3ee55);}
+.icon{width:18px;height:18px;flex-shrink:0;}
+.icon svg{width:100%;height:100%;}
+
+#loginView{width:100%;max-width:400px;padding:36px 28px;text-align:center;margin:80px auto;background:linear-gradient(160deg,#131a2c,#0d121e 55%);border:1px solid var(--border);position:relative;overflow:hidden;}
+#loginView::before{content:'';position:absolute;inset:0;background:conic-gradient(from 0deg,#22d3ee22,#a855f722,#f472b622,#22d3ee22);animation:spinBg 12s linear infinite;opacity:.5;z-index:0;}
+#loginView>*{position:relative;z-index:1;}
+@keyframes spinBg{to{transform:rotate(360deg);}}
+.brand-tag{display:inline-block;font-size:10px;font-weight:800;letter-spacing:3px;padding:5px 14px;border-radius:20px;background:linear-gradient(120deg,var(--cyan),var(--magenta),var(--amber));background-size:200% auto;color:#04121a;animation:brandShift 4s linear infinite;margin-bottom:14px;}
+@keyframes brandShift{to{background-position:200% center;}}
+#loginView .logo-badge{width:56px;height:56px;margin:0 auto 10px;}
+#loginView h1{font-size:19px;font-weight:700;margin-bottom:4px;}
+#loginView p{color:var(--muted);font-size:12px;margin-bottom:20px;font-family:'Courier New',monospace;}
+input[type=password]{width:100%;padding:13px 15px;border-radius:10px;border:1px solid var(--border);background:#050710cc;color:var(--text);font-size:15px;outline:none;margin-bottom:12px;}
+input:focus{border-color:var(--cyan);}
+.btn{width:100%;padding:13px;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;color:#04121a;background:linear-gradient(120deg,var(--cyan),var(--magenta));}
+.err{color:var(--red);font-size:12px;margin-top:10px;min-height:14px;}
+.hint{font-size:11px;color:var(--muted);margin-top:14px;}
+
+#appView{display:none;min-height:100vh;}
+.shell{display:flex;min-height:100vh;}
+.sidebar{width:230px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:20px 14px;position:sticky;top:0;height:100vh;transition:.25s width,.25s padding;overflow:hidden;}
+.sidebar.collapsed{width:0;padding:0;border-right:none;}
+.sidebar .brand{display:flex;align-items:center;gap:10px;padding:0 6px 20px;border-bottom:1px solid var(--border);margin-bottom:16px;white-space:nowrap;}
+.sidebar .brand div{font-size:13px;font-weight:800;}
+.sidebar .brand span{font-size:9px;color:var(--muted);letter-spacing:1px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:10px;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;margin-bottom:4px;transition:.2s;white-space:nowrap;}
+.nav-item:hover{background:#131a2c;color:var(--text);}
+.nav-item.active{background:linear-gradient(120deg,#22d3ee22,#a855f722);color:var(--cyan);border:1px solid #22d3ee44;}
+.nav-item .chevron{margin-left:auto;transition:.2s transform;opacity:.6;}
+.nav-item.expanded .chevron{transform:rotate(90deg);}
+.nav-sub{max-height:0; overflow:hidden; padding-left:26px; transition:.25s max-height;}
+.nav-sub.expanded{max-height:120px;}
+.nav-sub .nav-item{font-size:12px; padding:8px 10px;}
+.sidebar-footer{margin-top:auto;font-size:10px;color:var(--muted);font-family:'Courier New',monospace;padding:10px 6px;white-space:nowrap;}
+
+.main{flex:1;display:flex;flex-direction:column;min-width:0;}
+.topbar-new{display:flex;justify-content:space-between;align-items:center;padding:16px 24px;border-bottom:1px solid var(--border);background:linear-gradient(120deg,#0d121e,#12172a);position:sticky;top:0;z-index:20;gap:14px;}
+.topbar-left{display:flex;align-items:center;gap:14px;}
+.collapse-btn{background:#0f1420;border:1px solid var(--border);color:var(--muted);width:34px;height:34px;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.collapse-btn:hover{border-color:var(--cyan);color:var(--cyan);}
+.collapse-btn .icon{width:16px;height:16px;}
+.topbar-new h2{font-size:16px;font-weight:700;background:linear-gradient(90deg,var(--cyan),var(--magenta));-webkit-background-clip:text;background-clip:text;color:transparent;}
+.topbar-new .clock{font-size:11px;color:var(--muted);font-family:'Courier New',monospace;margin-top:2px;}
+.user-menu{position:relative;flex-shrink:0;}
+.user-btn{display:flex;align-items:center;gap:8px;background:#0f1420;border:1px solid var(--border);padding:8px 12px;border-radius:20px;cursor:pointer;font-size:12px;color:var(--text);white-space:nowrap;}
+.user-avatar{width:24px;height:24px;border-radius:50%;background:linear-gradient(120deg,var(--cyan),var(--magenta));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#04121a;}
+.user-dropdown{display:none;position:absolute;right:0;top:calc(100% + 8px);width:280px;background:var(--panel);border:1px solid var(--border);border-radius:12px;box-shadow:0 10px 40px #000a;overflow:hidden;z-index:30;}
+.user-dropdown.show{display:block;}
+.user-dropdown .head{padding:14px 16px;border-bottom:1px solid var(--border);}
+.user-dropdown .head .name{font-size:13px;font-weight:700;}
+.user-dropdown .head .role{font-size:10px;color:var(--muted);margin-top:2px;}
+.user-dropdown .section-lbl{font-size:10px;color:var(--muted);letter-spacing:1px;padding:10px 16px 4px;}
+.login-log{max-height:160px;overflow-y:auto;}
+.login-log .row{display:flex;justify-content:space-between;padding:7px 16px;font-size:11px;font-family:'Courier New',monospace;color:var(--text);}
+.login-log .row .ip{color:var(--muted);}
+.user-dropdown .logout-item{padding:12px 16px;color:var(--red);font-size:12px;font-weight:700;cursor:pointer;border-top:1px solid var(--border);}
+.user-dropdown .logout-item:hover{background:#170a0a;}
+
+.content{padding:20px 24px 40px;}
+
+.demo-bar{padding:12px 16px;margin-bottom:18px;border:1px dashed #f5a62355;display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--muted);}
+.demo-bar button{background:#0b0f18;border:1px solid var(--border);color:var(--muted);padding:6px 12px;border-radius:8px;cursor:pointer;font-size:11px;font-weight:600;}
+.demo-bar button.active{background:linear-gradient(120deg,var(--cyan),var(--magenta));color:#04121a;border-color:transparent;}
+
+.status-panel{padding:18px 20px;margin-bottom:16px;}
+.status-panel .sp-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+.status-panel .sp-head h3{font-size:13px;letter-spacing:1px;color:var(--text);}
+.mode-badges{display:flex;gap:6px;}
+.mode-badge{font-size:10px;font-weight:800;padding:5px 11px;border-radius:8px;border:1px solid var(--border);color:var(--muted);background:#0b0f18;}
+.mode-badge.on{border-color:transparent;}
+.mode-badge.on.oni{background:linear-gradient(120deg,var(--cyan),#0891b2);color:#04121a;}
+.mode-badge.on.onii{background:linear-gradient(120deg,var(--amber),#b45309);color:#1a0505;}
+.mode-badge.on.off{background:linear-gradient(120deg,var(--red),#b91c1c);color:#1a0505;}
+
+.sp-section{margin-bottom:16px;} .sp-section:last-child{margin-bottom:0;}
+.sp-section .sp-label{font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:8px;}
+.trio3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.box-r{background:linear-gradient(160deg,#3a121280,#080b12);border:1px solid #ff3b3b55;}
+.box-s{background:linear-gradient(160deg,#0f1e3a80,#080b12);border:1px solid #2f8dff55;}
+.box-t{background:linear-gradient(160deg,#0f2a1c80,#080b12);border:1px solid #22e07a55;}
+.pbox{border-radius:10px;padding:12px;text-align:center;}
+.pbox .lbl{font-size:10px;font-weight:800;letter-spacing:1px;margin-bottom:6px;}
+.pbox .val{font-size:19px;font-weight:800;font-family:'Courier New',monospace;}
+.pbox .unit{font-size:9px;color:var(--muted);margin-top:2px;}
+.phase-r{color:var(--red);} .phase-s{color:var(--blue);} .phase-t{color:var(--green);}
+
+.chart-panel{padding:18px 20px;margin-bottom:16px;}
+.chart-panel .ch-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;}
+.chart-panel h3{font-size:12px;color:var(--text);letter-spacing:.5px;}
+.ch-controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+.rst-toggles{display:flex;gap:6px;}
+.rst-chip{display:flex;align-items:center;gap:5px;font-size:10px;font-family:'Courier New',monospace;padding:4px 9px;border-radius:8px;border:1px solid var(--border);cursor:pointer;user-select:none;background:#0b0f18;color:var(--muted);transition:.2s;}
+.rst-chip .dot{width:8px;height:8px;border-radius:50%;}
+.rst-chip.on{color:var(--text);border-color:currentColor;}
+.range-btns{display:flex;gap:4px;background:#0b0f18;border:1px solid var(--border);border-radius:8px;padding:3px;}
+.range-btn{font-size:10px;padding:5px 9px;border-radius:6px;border:none;background:none;color:var(--muted);cursor:pointer;font-weight:600;}
+.range-btn.active{background:linear-gradient(120deg,var(--cyan),var(--magenta));color:#04121a;}
+.live-btn{font-size:10px;padding:5px 11px;border-radius:8px;border:1px solid var(--border);background:#0b0f18;color:var(--muted);cursor:pointer;font-weight:700;display:flex;align-items:center;gap:5px;}
+.live-btn.active{border-color:var(--red);color:var(--red);}
+.live-btn .dot{width:6px;height:6px;border-radius:50%;background:currentColor;}
+.live-btn.active .dot{animation:blink 1.2s infinite;}
+@keyframes blink{50%{opacity:.2;}}
+.zoom-btns{display:flex;gap:4px;}
+.zoom-btn{width:24px;height:24px;border-radius:6px;border:1px solid var(--border);background:#0b0f18;color:var(--muted);cursor:pointer;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;}
+.zoom-btn:hover{color:var(--cyan);border-color:var(--cyan);}
+.chart-wrap{position:relative;touch-action:none;}
+.chart-panel canvas{width:100%;height:170px;display:block;cursor:grab;}
+.chart-panel canvas:active{cursor:grabbing;}
+.chart-panel .now-vals{display:flex;gap:16px;margin-top:8px;font-size:11px;font-family:'Courier New',monospace;flex-wrap:wrap;}
+.range-hint{font-size:9px; color:var(--muted); margin-top:4px; font-family:'Courier New',monospace;}
+
+.placeholder-page{padding:60px 20px;text-align:center;color:var(--muted);}
+.placeholder-page .ic{width:52px;height:52px;margin:0 auto 14px;opacity:.7;}
+
+/* ===== HALAMAN DISTRIBUSI ===== */
+.page-header-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:18px;}
+.page-title{font-size:11px;font-weight:800;letter-spacing:2px;color:var(--muted);text-transform:uppercase;}
+.page-title b{color:var(--cyan);}
+.mode-switch-wrap{display:flex;align-items:center;gap:9px;padding:7px 12px;border:1px solid var(--border);background:#0b0f18;border-radius:12px;}
+.mode-switch-lbl{font-size:10px;font-weight:800;letter-spacing:1px;color:var(--muted);}
+.mode-switch-lbl.active{color:var(--cyan);}
+.mode-switch-lbl.active.warn{color:var(--amber);}
+.mswitch{position:relative;width:46px;height:25px;border-radius:20px;background:#050710;border:1px solid var(--border);cursor:pointer;flex-shrink:0;}
+.mswitch .knob{position:absolute;top:2px;left:2px;width:19px;height:19px;border-radius:50%;background:linear-gradient(120deg,var(--cyan),#0891b2);box-shadow:0 0 8px #22d3ee66;transition:.25s;}
+.mswitch.on{border-color:#f5a62388;}
+.mswitch.on .knob{transform:translateX(21px);background:linear-gradient(120deg,var(--amber),#b45309);box-shadow:0 0 8px #f5a62388;}
+
+.panel-block, .timer-block{padding:18px 20px;margin-bottom:16px;}
+.pb-head, .tb-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.pb-head h3, .tb-head{font-size:12px;letter-spacing:1px;color:var(--text);}
+.auto-note{margin-top:12px;font-size:11px;color:var(--amber);padding:10px 12px;background:#1a1006;border:1px solid #f5a62344;border-radius:8px;}
+
+.sdp-btn{background:linear-gradient(150deg,var(--panel),#0f1524);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center;cursor:pointer;transition:.2s;user-select:none;}
+.sdp-btn.sdp-first{grid-column:1 / -1;}
+.sdp-btn:not(.disabled):hover{border-color:var(--cyan);}
+.sdp-btn.active{border-color:var(--cyan);box-shadow:0 0 18px -4px var(--cyan);background:linear-gradient(150deg,#0f2230,var(--panel));}
+.sdp-btn .nm{font-size:12px;font-weight:800;letter-spacing:1px;margin-bottom:8px;}
+.sdp-btn .st{font-size:10px;font-weight:700;padding:4px 10px;border-radius:8px;display:inline-block;background:#0b0f18;color:var(--muted);}
+.sdp-btn.active .st{background:linear-gradient(120deg,var(--cyan),#0891b2);color:#04121a;}
+.sdp-btn.disabled{opacity:.4;cursor:not-allowed;}
+
+.timer-row{display:grid;grid-template-columns:64px 1fr 110px 64px;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid var(--border);}
+.timer-row:last-child{border-bottom:none;}
+.timer-row .sdp-nm{font-size:12px;font-weight:800;}
+.timer-row .track{height:5px;background:#050710;border-radius:4px;overflow:hidden;}
+.timer-row .track .fill{height:100%;background:linear-gradient(90deg,var(--cyan),var(--magenta));border-radius:4px;transition:.15s;}
+.timer-row .delay-input{display:flex;align-items:center;gap:6px;background:#0b0f18;border:1px solid var(--border);border-radius:9px;padding:6px 9px;}
+.timer-row .delay-input input{width:44px;background:transparent;border:none;color:var(--text);font-size:13px;font-family:monospace;outline:none;text-align:right;}
+.timer-row .delay-input span{font-size:10px;color:var(--muted);}
+.timer-row .ok-btn{background:#0b0f18;border:1px solid var(--border);color:var(--muted);padding:7px 4px;border-radius:8px;cursor:pointer;font-size:10px;font-weight:800;text-align:center;}
+.timer-row .ok-btn:hover{border-color:var(--cyan);color:var(--cyan);}
+.timer-row .ok-btn.saved{border-color:var(--green);color:var(--green);}
+@media(max-width:520px){.timer-row{grid-template-columns:1fr;gap:6px;padding:12px 4px;}}
+
+/* ===== MODAL PASSWORD (kontrol manual) ===== */
+.modal-overlay{display:none;position:fixed;inset:0;background:#000a;z-index:100;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.show{display:flex;}
+.modal-box{background:var(--panel);border:1px solid var(--cyan);border-radius:14px;padding:26px;max-width:340px;width:100%;box-shadow:0 0 40px #22d3ee33;}
+.modal-box h3{font-size:14px;margin-bottom:6px;}
+.modal-box p{font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.5;}
+.modal-box input{width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--border);background:#050710;color:var(--text);font-size:14px;outline:none;margin-bottom:6px;}
+.modal-box input:focus{border-color:var(--cyan);}
+.modal-box .err{color:var(--red);font-size:11px;min-height:14px;margin-bottom:10px;}
+.modal-actions{display:flex;gap:10px;}
+.modal-actions button{flex:1;padding:11px;border-radius:9px;border:none;font-size:13px;font-weight:700;cursor:pointer;}
+.modal-cancel{background:#1c2130;color:var(--muted);}
+.modal-confirm{background:linear-gradient(120deg,var(--cyan),var(--magenta));color:#04121a;}
+
+/* ===== HALAMAN ATS ===== */
+.source-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.source-pill{display:flex;align-items:center;justify-content:space-between;background:#080b12;border:1px solid var(--border);border-radius:20px;padding:11px 16px;cursor:default;}
+.source-pill .nm{font-size:12px;font-weight:800;letter-spacing:1px;color:var(--text);}
+.source-pill .dot{width:13px;height:13px;border-radius:50%;border:2px solid var(--muted);background:transparent;flex-shrink:0;transition:.2s;}
+.source-pill .dot.on{border-color:var(--green);background:var(--green);box-shadow:0 0 9px rgba(34,224,122,.65);}
+.source-pill .dot.on.ems{border-color:var(--red);background:var(--red);box-shadow:0 0 9px rgba(255,59,59,.55);}
+.source-pill.is-active{border-color:rgba(34,224,122,.55);background:linear-gradient(160deg,#0d1e17,#080b12);}
+.source-pill.is-active.ems{border-color:rgba(255,59,59,.55);background:linear-gradient(160deg,#241010,#080b12);}
+
+.source-btn{background:#080b12;border:1px solid var(--border);border-radius:11px;padding:12px 8px;text-align:center;cursor:pointer;transition:.2s;user-select:none;}
+.source-btn .nm{font-size:12px;font-weight:800;letter-spacing:1px;color:var(--text);margin-bottom:6px;}
+.source-btn .st{font-size:11px;font-weight:700;padding:3px 9px;border-radius:8px;display:inline-block;background:#1c2740;color:var(--muted);}
+.source-btn.active{border-color:rgba(34,224,122,.55);background:linear-gradient(160deg,#0d1e17,#080b12);}
+.source-btn.active .st{background:linear-gradient(120deg,var(--green),#0d9488);color:#04231a;}
+.source-btn.active.ems{border-color:rgba(255,59,59,.55);background:linear-gradient(160deg,#241010,#080b12);}
+.source-btn.active.ems .st{background:linear-gradient(120deg,var(--red),#b91c1c);color:#2a0505;}
+.source-btn.disabled{opacity:.4;cursor:not-allowed;filter:grayscale(.3);}
+.source-btn:not(.disabled):hover{border-color:rgba(34,211,238,.4);}
+
+.ems-note{margin-top:10px;font-size:10px;color:var(--red);display:flex;align-items:center;gap:6px;}
+.ems-note.hidden{display:none;}
+
+.delay-group{margin-bottom:6px;}
+.delay-group:last-child{margin-bottom:0;}
+.delay-group-title{font-size:12px;font-weight:800;letter-spacing:1px;color:var(--magenta);padding:10px 8px 6px;}
+.delay-row{display:grid;grid-template-columns:70px 1fr 130px 64px;align-items:center;gap:10px;padding:9px 8px;border-bottom:1px solid var(--border);}
+.delay-group:last-child .delay-row:last-child{border-bottom:none;}
+.delay-row .lbl{font-size:12px;font-weight:800;color:var(--text);}
+.delay-row .track{height:5px;background:#0b0f18;border-radius:4px;position:relative;overflow:hidden;}
+.delay-row .track .fill{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,var(--cyan),var(--magenta));border-radius:4px;transition:.15s;}
+.delay-row .delay-input{display:flex;align-items:center;gap:6px;background:#080b12;border:1px solid var(--border);border-radius:9px;padding:5px 6px 5px 8px;}
+.delay-row .delay-input input{width:34px;background:transparent;border:none;color:var(--text);font-size:13px;font-family:'Courier New',monospace;outline:none;text-align:right;}
+.delay-row .delay-input span{font-size:10px;color:var(--muted);}
+.delay-row .stepper{display:flex;flex-direction:column;gap:1px;margin-left:2px;}
+.delay-row .stepper button{width:16px;height:11px;line-height:9px;background:#131a2c;border:1px solid var(--border);color:var(--muted);font-size:8px;cursor:pointer;padding:0;}
+.delay-row .stepper button:first-child{border-radius:4px 4px 0 0;}
+.delay-row .stepper button:last-child{border-radius:0 0 4px 4px;}
+.delay-row .stepper button:hover{border-color:var(--cyan);color:var(--cyan);}
+.delay-row .ok-btn{background:#0f1420;border:1px solid var(--border);color:var(--muted);padding:6px 4px;border-radius:8px;cursor:pointer;font-size:10px;font-weight:800;letter-spacing:1px;text-align:center;}
+.delay-row .ok-btn:hover{border-color:var(--cyan);color:var(--cyan);}
+.delay-row .ok-btn.saved{border-color:var(--green);color:var(--green);}
+@media(max-width:640px){
+  .source-grid{grid-template-columns:1fr;}
+  .delay-row{grid-template-columns:1fr;gap:6px;padding:12px 6px;}
+}
+
+/* ===== BANNER ALARM GLOBAL ===== */
+.alarm-banner{max-height:0;overflow:hidden;transition:.3s max-height,.3s padding;background:linear-gradient(120deg,#7f1d1d,#991b1b);color:#fff;text-align:center;font-weight:800;font-size:12px;letter-spacing:.3px;}
+.alarm-banner.show{max-height:70px;padding:12px 20px;animation:alarmGlow 1.6s infinite;}
+@keyframes alarmGlow{0%,100%{box-shadow:inset 0 0 0 #0000;}50%{box-shadow:inset 0 0 24px #ff3b3b55;}}
+
+/* ===== HALAMAN ALARM ===== */
+.alarm-card{padding:18px 20px;margin-bottom:16px;}
+.ac-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;}
+.ac-title{font-size:13px;font-weight:800;margin-bottom:6px;}
+.ac-status{display:inline-block;font-size:10px;font-weight:800;padding:4px 10px;border-radius:8px;background:#0b0f18;color:var(--muted);letter-spacing:.5px;}
+.ac-status.active{background:linear-gradient(120deg,var(--red),#b91c1c);color:#fff;animation:blink 1.2s infinite;}
+.ac-thresh{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+.ac-thresh.three{grid-template-columns:repeat(3,1fr);gap:8px;}
+.th-field{background:#080b12;border-radius:10px;padding:10px 12px;}
+.th-field label{font-size:9px;color:var(--muted);letter-spacing:.5px;display:block;margin-bottom:6px;font-weight:800;}
+.th-field:nth-child(1) label{color:var(--red);}
+.th-field:nth-child(2) label{color:var(--blue);}
+.th-field:nth-child(3) label{color:var(--green);}
+.th-field input{width:100%;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text);font-size:15px;font-family:monospace;outline:none;padding-bottom:3px;}
+.th-field input:focus{border-color:var(--cyan);}
+@media(max-width:480px){.ac-thresh.three{grid-template-columns:1fr 1fr;}}
+.ac-desc{font-size:11px;color:var(--muted);margin-bottom:16px;line-height:1.5;}
+.ac-lbl{font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:8px;}
+.action-pills{display:flex;gap:8px;flex-wrap:wrap;}
+.apill{background:#0b0f18;border:1px solid var(--border);color:var(--muted);padding:8px 14px;border-radius:20px;cursor:pointer;font-size:11px;font-weight:700;}
+.apill.sel{background:linear-gradient(120deg,var(--cyan),var(--magenta));color:#04121a;border-color:transparent;}
+.alarm-log{margin-top:4px;}
+.alarm-log .row{padding:7px 4px;font-size:11px;font-family:monospace;border-bottom:1px solid var(--border);color:var(--muted);}
+.alarm-log .row:last-child{border-bottom:none;}
+
+/* ===== INDIKATOR LAMPU SDP (Dashboard) ===== */
+.sdp-lamp-panel{padding:16px 20px;margin-bottom:16px;}
+.sdp-lamp-panel .sp-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.sdp-lamp-row{display:flex;gap:10px;flex-wrap:wrap;}
+.sdp-lamp{flex:1;min-width:88px;display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px 8px;border-radius:12px;background:#0b0f18;border:1px solid var(--border);transition:.25s;}
+.sdp-lamp .bulb{width:22px;height:22px;border-radius:50%;background:#1c2130;border:1px solid var(--border);position:relative;transition:.25s;}
+.sdp-lamp .bulb::after{content:'';position:absolute;inset:0;border-radius:50%;transition:.25s;}
+.sdp-lamp.on{border-color:rgba(34,224,122,.5);background:linear-gradient(160deg,#0f2a1c,#0b0f18);}
+.sdp-lamp.on .bulb{background:linear-gradient(150deg,var(--green),#0d9488);box-shadow:0 0 12px 3px rgba(34,224,122,.65);}
+.sdp-lamp .nm{font-size:10px;font-weight:800;letter-spacing:.5px;color:var(--text);}
+.sdp-lamp .st{font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.5px;}
+.sdp-lamp.on .st{color:var(--green);}
+.sdp-lamp-summary{font-size:11px;color:var(--muted);margin-top:12px;font-family:'Courier New',monospace;}
+@media(max-width:520px){.sdp-lamp{min-width:70px;}}
+</style>
+
+<!-- Firebase Realtime Database -->
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+<script>
+const firebaseConfig={apiKey:"AIzaSyBqAyQtC3rjsXGVI0e_LyK9KcxYsS3kksQ",authDomain:"panel-kontrol-energi.firebaseapp.com",databaseURL:"https://panel-kontrol-energi-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"panel-kontrol-energi",storageBucket:"panel-kontrol-energi.firebasestorage.app",messagingSenderId:"596902498402",appId:"1:596902498402:web:2b357daefb9dadf6a6c13b"};
+firebase.initializeApp(firebaseConfig);
+const firebaseDb=firebase.database();
+const FIREBASE_PARAM_PATH='panel/parameters';
+let firebaseReady=false; let firebaseApplying=false;
+function firebaseParameterState(){return {ats:{mode:typeof atsMode!=='undefined'?atsMode:'auto',source:typeof currentSource!=='undefined'?currentSource:'PLN',delay:typeof atsDelayState!=='undefined'?{...atsDelayState}:{pln_on:15,genset_on:15,genset_off:30}},distribusi:{mode:typeof distMode!=='undefined'?distMode:'auto',sdpState:typeof sdpState!=='undefined'?[...sdpState]:[false,false,false,false,false],timerState:typeof timerState!=='undefined'?[...timerState]:[15,15,15,15,15]},updatedAt:firebase.database.ServerValue.TIMESTAMP};}
+function saveParametersToFirebase(){if(!firebaseReady||firebaseApplying)return Promise.resolve();return firebaseDb.ref(FIREBASE_PARAM_PATH).update(firebaseParameterState()).catch(e=>console.error('Firebase save parameters:',e));}
+function loadParametersFromFirebase(){return firebaseDb.ref(FIREBASE_PARAM_PATH).once('value').then(snap=>{const d=snap.val();if(!d)return;firebaseApplying=true;if(d.ats){if(d.ats.mode==='auto'||d.ats.mode==='manual')atsMode=d.ats.mode;if(d.ats.source==='PLN'||d.ats.source==='GENSET'||d.ats.source==='OFF')currentSource=d.ats.source;if(d.ats.delay)Object.keys(atsDelayState).forEach(k=>{if(Number.isFinite(Number(d.ats.delay[k])))atsDelayState[k]=Number(d.ats.delay[k]);});}if(d.distribusi){if(d.distribusi.mode==='auto'||d.distribusi.mode==='manual')distMode=d.distribusi.mode;if(Array.isArray(d.distribusi.sdpState))d.distribusi.sdpState.forEach((v,i)=>{if(i<sdpState.length)sdpState[i]=!!v;});if(Array.isArray(d.distribusi.timerState))d.distribusi.timerState.forEach((v,i)=>{if(i<timerState.length&&Number.isFinite(Number(v)))timerState[i]=Number(v);});}try{renderAtsModeSwitch();renderAtsSourceIndicator();renderAtsSourceControl();renderAtsDelayRows();renderModeSwitch();renderSdpGrid();renderTimerRows();renderSdpLamps();setSource(currentSource);}catch(e){console.warn('Firebase UI sync:',e);}firebaseApplying=false;}).catch(e=>console.error('Firebase load parameters:',e));}
+function startFirebaseParameters(){firebaseReady=true;loadParametersFromFirebase();firebaseDb.ref(FIREBASE_PARAM_PATH).on('value',snap=>{if(!snap.exists()||firebaseApplying)return;loadParametersFromFirebase();});}
+</script>
+</head>
+<body>
+
+<div id="loginView" class="card">
+  <div class="brand-tag">BUANA CITA</div>
+  <div class="logo-badge">LOGO</div>
+  <h1>Panel Kontrol Energi</h1>
+  <p>&gt; masukkan_password_dashboard</p>
+  <input type="password" id="pwInput" placeholder="Password (bebas untuk prototipe)" onkeydown="if(event.key==='Enter')doLogin()">
+  <button class="btn fx" onclick="doLogin()">MASUK</button>
+  <div class="err" id="loginErr"></div>
+  <div class="hint">Prototipe tampilan — data listrik & riwayat historis masih simulasi.</div>
+</div>
+
+<div id="appView">
+<div id="alarmBanner" class="alarm-banner"></div>
+<div class="shell">
+
+  <div class="sidebar" id="sidebar">
+    <div class="brand"><div class="logo-badge" id="sideLogo"></div><div><div>Buona Cita</div><span>PANEL ENERGI</span></div></div>
+
+    <div class="nav-item active" onclick="setPage('dashboard', this)">
+      <span class="icon" id="icDashboard"></span><span class="lbl">Dashboard</span>
+    </div>
+
+    <div class="nav-item" id="navKontrol" onclick="toggleKontrol()">
+      <span class="icon" id="icKontrol"></span><span class="lbl">Kontrol</span>
+      <span class="icon chevron" id="icChevron"></span>
+    </div>
+    <div class="nav-sub" id="kontrolSub">
+      <div class="nav-item" onclick="setPage('ats', this)"><span class="icon" id="icAts"></span><span class="lbl">ATS</span></div>
+      <div class="nav-item" onclick="setPage('distribusi', this)"><span class="icon" id="icDist"></span><span class="lbl">Distribusi</span></div>
+    </div>
+
+    <div class="nav-item" onclick="setPage('alarm', this)">
+      <span class="icon" id="icAlarm"></span><span class="lbl">Alarm</span>
+    </div>
+
+    <div class="sidebar-footer">smart panel · Buona Cita<br>v9 (tema premium)</div>
+  </div>
+
+  <div class="main">
+    <div class="topbar-new">
+      <div class="topbar-left">
+        <button class="collapse-btn fx" onclick="toggleSidebar()" title="Tampilkan/sembunyikan menu"><span class="icon" id="icMenu"></span></button>
+        <div><h2>Panel Kontrol Energi</h2><div class="clock" id="clockText">-</div></div>
+      </div>
+      <div class="user-menu">
+        <button class="user-btn fx" onclick="toggleUserMenu()"><span class="user-avatar">A</span> Admin ▾</button>
+        <div class="user-dropdown" id="userDropdown">
+          <div class="head"><div class="name">Admin</div><div class="role">Login sejak <span id="loginSinceText">-</span></div></div>
+          <div class="section-lbl">RIWAYAT LOGIN TERBARU</div>
+          <div class="login-log" id="loginLog"></div>
+          <div class="logout-item fx" onclick="doLogout()">⎋ Keluar</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content" id="pageDashboard">
+      <div class="demo-bar">
+        ⚡ Prototipe — pilih sumber untuk lihat perubahan data:
+        <button class="fx active" id="demoPLN" onclick="setSource('PLN')">PLN (ON I)</button>
+        <button class="fx" id="demoGENSET" onclick="setSource('GENSET')">GENSET (ON II)</button>
+        <button class="fx" id="demoOFF" onclick="setSource('OFF')">EMS (OFF)</button>
+      </div>
+
+      <div class="status-panel card sdp-lamp-panel">
+        <div class="sp-head">
+          <h3>STATUS SDP AKTIF</h3>
+        </div>
+        <div class="sdp-lamp-row" id="sdpLampRow"></div>
+        <div class="sdp-lamp-summary" id="sdpLampSummary">0 dari 5 SDP menyala.</div>
+      </div>
+
+      <div class="status-panel card">
+        <div class="sp-head">
+          <h3>STATUS SUMBER</h3>
+          <div class="mode-badges">
+            <div class="mode-badge" id="badgeONI">ON I</div>
+            <div class="mode-badge" id="badgeONII">ON II</div>
+            <div class="mode-badge" id="badgeOFF">OFF</div>
+          </div>
+        </div>
+
+        <div class="sp-section">
+          <div class="sp-label">TEGANGAN FASA — NETRAL (N-L)</div>
+          <div class="trio3">
+            <div class="pbox box-r"><div class="lbl phase-r">R-N</div><div class="val phase-r" id="vRN">220.0</div><div class="unit">Volt</div></div>
+            <div class="pbox box-s"><div class="lbl phase-s">S-N</div><div class="val phase-s" id="vSN">220.0</div><div class="unit">Volt</div></div>
+            <div class="pbox box-t"><div class="lbl phase-t">T-N</div><div class="val phase-t" id="vTN">220.0</div><div class="unit">Volt</div></div>
+          </div>
+        </div>
+
+        <div class="sp-section">
+          <div class="sp-label">TEGANGAN ANTAR FASA (L-L)</div>
+          <div class="trio3">
+            <div class="pbox box-r"><div class="lbl phase-r">R-S</div><div class="val phase-r" id="vRS">380.0</div><div class="unit">Volt</div></div>
+            <div class="pbox box-s"><div class="lbl phase-s">S-T</div><div class="val phase-s" id="vST">380.0</div><div class="unit">Volt</div></div>
+            <div class="pbox box-t"><div class="lbl phase-t">T-R</div><div class="val phase-t" id="vTR">380.0</div><div class="unit">Volt</div></div>
+          </div>
+        </div>
+
+        <div class="sp-section">
+          <div class="sp-label">ARUS (AMPERE)</div>
+          <div class="trio3">
+            <div class="pbox box-r"><div class="lbl phase-r">R</div><div class="val phase-r" id="iR">0.0</div><div class="unit">A</div></div>
+            <div class="pbox box-s"><div class="lbl phase-s">S</div><div class="val phase-s" id="iS">0.0</div><div class="unit">A</div></div>
+            <div class="pbox box-t"><div class="lbl phase-t">T</div><div class="val phase-t" id="iT">0.0</div><div class="unit">A</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-panel card" id="panelV"></div>
+      <div class="chart-panel card" id="panelI"></div>
+      <div class="chart-panel card" id="panelF"></div>
+      <div class="chart-panel card" id="panelPF"></div>
+
+      <div style="text-align:center; padding:10px; font-size:10px; color:var(--muted); font-family:'Courier New',monospace;">
+        Data & riwayat historis simulasi — akan digantikan pembacaan &amp; log real-time power meter Larkin LR-3D3Y setelah migrasi ke ESP32-S3
+      </div>
+    </div>
+
+    <div class="content" id="pageAts" style="display:none;">
+      <div class="page-title">KONTROL &rsaquo; <b>ATS</b></div>
+
+      <!-- KOLOM 1: SUMBER AKTIF (indikator saja, tak bisa diklik) -->
+      <div class="panel-block card">
+        <div class="pb-head"><h3>SUMBER AKTIF</h3></div>
+        <div class="source-grid" id="atsSourceIndicator"></div>
+      </div>
+
+      <!-- KOLOM 2: KONTROL SUMBER AKTIF (bisa diklik saat MANUAL) -->
+      <div class="panel-block card">
+        <div class="pb-head">
+          <h3>KONTROL SUMBER AKTIF</h3>
+          <div class="mode-switch-wrap">
+            <span class="mode-switch-lbl active" id="atsLblAuto">AUTO</span>
+            <div class="mswitch" id="atsModeSwitch" onclick="requestToggleAtsMode()"><div class="knob"></div></div>
+            <span class="mode-switch-lbl" id="atsLblManual">MANUAL</span>
+          </div>
+        </div>
+        <div class="source-grid" id="atsSourceControl"></div>
+        <div class="auto-note" id="atsAutoNote">⚠ Mode AUTO aktif — ATS memilih sumber secara otomatis (mengikuti hasil evaluasi alarm proteksi), kontrol manual dinonaktifkan. Aktifkan MANUAL (perlu password) untuk memilih sumber secara langsung.</div>
+        <div class="ems-note hidden" id="atsEmsNote">⛔ EMS AKTIF — seluruh sumber (PLN &amp; GENSET) diputus dari sistem kelistrikan.</div>
+      </div>
+
+      <!-- KOLOM 3: DELAY ATS -->
+      <div class="panel-block card">
+        <div class="pb-head"><h3>PENGATURAN DELAY ATS</h3></div>
+        <div class="delay-group">
+          <div class="delay-group-title">PLN</div>
+          <div id="atsDelayRowsPln"></div>
+        </div>
+        <div class="delay-group">
+          <div class="delay-group-title">GENSET</div>
+          <div id="atsDelayRowsGenset"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content" id="pageDistribusi" style="display:none;">
+      <div class="page-header-row">
+        <div class="page-title">KONTROL &rsaquo; <b>DISTRIBUSI</b></div>
+        <div class="mode-switch-wrap">
+          <span class="mode-switch-lbl active" id="lblAuto">AUTO</span>
+          <div class="mswitch" id="modeSwitch" onclick="requestToggleMode()"><div class="knob"></div></div>
+          <span class="mode-switch-lbl" id="lblManual">MANUAL</span>
+        </div>
+      </div>
+
+      <div class="panel-block card">
+        <div class="pb-head"><h3>KONTROL SDP</h3></div>
+        <div class="sdp-layout" id="sdpGrid"></div>
+        <div class="auto-note" id="autoNote">⚠ Mode AUTO aktif — kontrol manual SDP dinonaktifkan. Aktifkan MANUAL (perlu password) untuk mengontrol langsung.</div>
+      </div>
+
+      <div class="timer-block card">
+        <div class="tb-head">TIMER DELAY ON (mode otomatis)</div>
+        <div id="timerRows"></div>
+      </div>
+    </div>
+
+    <div class="content" id="pageAlarm" style="display:none;">
+      <div class="page-header-row">
+        <div class="page-title">ALARM &amp; <b>PROTEKSI</b></div>
+      </div>
+
+      <div class="demo-bar">
+        🔧 Simulasi kondisi untuk menguji alarm (tidak ada di panel asli):
+        <button class="fx" onclick="simulateFault('uv')">Under Voltage</button>
+        <button class="fx" onclick="simulateFault('ov')">Over Voltage</button>
+        <button class="fx" onclick="simulateFault('spf','R')">Fasa R Putus</button>
+        <button class="fx" onclick="simulateFault('spf','S')">Fasa S Putus</button>
+        <button class="fx" onclick="simulateFault('spf','T')">Fasa T Putus</button>
+        <button class="fx" onclick="simulateFault(null)">Reset Normal</button>
+      </div>
+
+      <div id="alarmCards"></div>
+
+      <div class="card" style="padding:16px 18px;">
+        <div class="tb-head" style="margin-bottom:10px;">RIWAYAT ALARM TERBARU</div>
+        <div class="alarm-log" id="alarmLog"></div>
+      </div>
+    </div>
+
+    <div class="content" id="pageOther" style="display:none;">
+      <div class="placeholder-page card">
+        <div class="ic" id="otherIcon"></div>
+        <div style="font-size:14px; font-weight:700; margin-bottom:6px;" id="otherTitle">Halaman ini segera hadir</div>
+        <div style="font-size:12px;">Fokus pengembangan saat ini ada di halaman Dashboard.</div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="modal-overlay" id="pwModal">
+  <div class="modal-box">
+    <h3>🔒 Masuk Mode Manual</h3>
+    <p>Masukkan password untuk mengaktifkan kontrol manual SDP. Ini mencegah orang lain sembarangan mengontrol panel.</p>
+    <input type="password" id="pwModalInput" placeholder="Password" onkeydown="if(event.key==='Enter')confirmManualPassword()">
+    <div class="err" id="pwModalErr"></div>
+    <div class="modal-actions">
+      <button class="modal-cancel fx" onclick="closeManualModal()">Batal</button>
+      <button class="modal-confirm fx" onclick="confirmManualPassword()">Konfirmasi</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="atsPwModal">
+  <div class="modal-box">
+    <h3>🔒 Masuk Mode Manual ATS</h3>
+    <p>Masukkan password operator untuk mengaktifkan kontrol manual pemilihan sumber (PLN/GENSET/EMS). Ini mencegah orang lain sembarangan memindahkan sumber.</p>
+    <input type="password" id="atsPwModalInput" placeholder="Password" onkeydown="if(event.key==='Enter')confirmAtsManualPassword()">
+    <div class="err" id="atsPwModalErr"></div>
+    <div class="modal-actions">
+      <button class="modal-cancel fx" onclick="closeAtsManualModal()">Batal</button>
+      <button class="modal-confirm fx" onclick="confirmAtsManualPassword()">Konfirmasi</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const ICONS = {
+  dashboard: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>`,
+  kontrol: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2.2" fill="currentColor" stroke="none"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2.2" fill="currentColor" stroke="none"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="11" cy="18" r="2.2" fill="currentColor" stroke="none"/></svg>`,
+  alarm: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>`,
+  ats: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3 3 7l4 4"/><path d="M3 7h13a4 4 0 0 1 4 4v2"/><path d="M17 21l4-4-4-4"/><path d="M21 17H8a4 4 0 0 1-4-4v-2"/></svg>`,
+  distribusi: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4.5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><path d="M12 6.5v5M12 11.5l-6 6M12 11.5l6 6"/></svg>`,
+  chevron: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>`,
+  menu: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>`
+};
+document.getElementById('icDashboard').innerHTML = ICONS.dashboard;
+document.getElementById('icKontrol').innerHTML = ICONS.kontrol;
+document.getElementById('icChevron').innerHTML = ICONS.chevron;
+document.getElementById('icAts').innerHTML = ICONS.ats;
+document.getElementById('icDist').innerHTML = ICONS.distribusi;
+document.getElementById('icAlarm').innerHTML = ICONS.alarm;
+document.getElementById('icMenu').innerHTML = ICONS.menu;
+
+const LOGO_SVG = `<svg viewBox="0 0 100 100" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22d3ee"/><stop offset="0.5" stop-color="#a855f7"/><stop offset="1" stop-color="#f472b6"/></linearGradient>
+<radialGradient id="glow" cx="30%" cy="22%" r="75%"><stop offset="0" stop-color="#ffffff" stop-opacity="0.4"/><stop offset="55%" stop-color="#ffffff" stop-opacity="0"/></radialGradient>
+</defs>
+<circle cx="50" cy="50" r="47" fill="url(#lg)"/>
+<circle cx="50" cy="50" r="47" fill="url(#glow)"/>
+<circle cx="50" cy="50" r="47" fill="none" stroke="#ffffff40" stroke-width="1.2"/>
+<path d="M18 54 H33 L40 33 L52 70 L60 45 L67 54 H82" fill="none" stroke="#050710" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>`;
+document.querySelectorAll('.logo-badge').forEach(el=>el.innerHTML=LOGO_SVG);
+
+document.addEventListener('click', function(e){
+  const el = e.target.closest('.fx');
+  if(el){
+    const rect = el.getBoundingClientRect();
+    const size = Math.max(rect.width, rect.height);
+    const ripple = document.createElement('span');
+    ripple.className='ripple'; ripple.style.width=ripple.style.height=size+'px';
+    ripple.style.left=(e.clientX-rect.left-size/2)+'px'; ripple.style.top=(e.clientY-rect.top-size/2)+'px';
+    el.appendChild(ripple);
+    setTimeout(()=>ripple.remove(),650);
+  }
+  if(!e.target.closest('.user-menu')) document.getElementById('userDropdown').classList.remove('show');
+}, true);
+
+function toggleUserMenu(){ document.getElementById('userDropdown').classList.toggle('show'); }
+function toggleSidebar(){ document.getElementById('sidebar').classList.toggle('collapsed'); }
+
+function toggleKontrol(){
+  document.getElementById('navKontrol').classList.toggle('expanded');
+  document.getElementById('kontrolSub').classList.toggle('expanded');
+}
+
+const PAGE_META = {
+  dashboard: {title:'Dashboard'},
+  distribusi: {title:'Kontrol Sub Distribusi'},
+  alarm: {title:'Alarm & Proteksi'},
+};
+function setPage(page, el){
+  document.querySelectorAll('.sidebar .nav-item').forEach(n=>n.classList.remove('active'));
+  if(el) el.classList.add('active');
+  document.getElementById('pageDashboard').style.display = page==='dashboard' ? 'block' : 'none';
+  document.getElementById('pageAts').style.display = page==='ats' ? 'block' : 'none';
+  document.getElementById('pageDistribusi').style.display = page==='distribusi' ? 'block' : 'none';
+  document.getElementById('pageAlarm').style.display = page==='alarm' ? 'block' : 'none';
+  document.getElementById('pageOther').style.display = (page!=='dashboard' && page!=='ats' && page!=='distribusi' && page!=='alarm') ? 'block' : 'none';
+  if(page==='ats'){
+    renderAtsModeSwitch(); renderAtsSourceIndicator(); renderAtsSourceControl(); renderAtsDelayRows();
+  } else if(page==='distribusi'){
+    renderModeSwitch(); renderSdpGrid(); renderTimerRows();
+  } else if(page==='alarm'){
+    renderAlarmCards(); renderAlarmLog();
+  } else if(page!=='dashboard'){
+    document.getElementById('otherTitle').textContent = PAGE_META[page].title;
+    document.getElementById('otherIcon').innerHTML = PAGE_META[page].icon;
+  }
+}
+
+/* ===== KONTROL SUB DISTRIBUSI =====
+   CATATAN KEAMANAN: pengecekan password di bawah ini murni untuk
+   prototipe tampilan (client-side saja, terlihat di source code).
+   Saat sudah tersambung ke ESP sungguhan, validasi password WAJIB
+   dilakukan di server (ESP), sama seperti login dashboard utama -
+   jangan hanya mengandalkan pengecekan di browser. */
+const MANUAL_PASSWORD_DEMO = 'admin123';
+let distMode = 'auto'; // 'auto' | 'manual'
+const SDP_LABELS = ['SDP 1','SDP 2','SDP 3','SDP 4','SDP 5'];
+const sdpState = [false,false,false,false,false]; // default aman: semua OFF
+const timerState = [15,15,15,15,15];
+
+function renderModeSwitch(){
+  document.getElementById('modeSwitch').classList.toggle('on', distMode==='manual');
+  document.getElementById('lblAuto').classList.toggle('active', distMode==='auto');
+  document.getElementById('lblManual').classList.toggle('active', distMode==='manual');
+  document.getElementById('lblManual').classList.toggle('warn', distMode==='manual');
+  document.getElementById('autoNote').style.display = distMode==='auto' ? 'block' : 'none';
+}
+
+function requestToggleMode(){
+  if(distMode==='manual'){
+    // Manual -> Auto: langsung, tanpa password (mematikan akses manual selalu aman)
+    distMode='auto';
+    renderModeSwitch(); renderSdpGrid(); saveParametersToFirebase();
+  } else {
+    openManualModal();
+  }
+}
+function openManualModal(){
+  document.getElementById('pwModalInput').value='';
+  document.getElementById('pwModalErr').textContent='';
+  document.getElementById('pwModal').classList.add('show');
+  setTimeout(()=>document.getElementById('pwModalInput').focus(), 50);
+}
+function closeManualModal(){ document.getElementById('pwModal').classList.remove('show'); }
+function confirmManualPassword(){
+  const pw = document.getElementById('pwModalInput').value;
+  if(pw === MANUAL_PASSWORD_DEMO){
+    distMode='manual';
+    closeManualModal();
+    renderModeSwitch(); renderSdpGrid(); saveParametersToFirebase();
+  } else {
+    document.getElementById('pwModalErr').textContent = 'Password salah.';
+  }
+}
+
+function toggleSdp(idx){
+  if(distMode==='auto') return;
+  sdpState[idx] = !sdpState[idx];
+  renderSdpGrid();
+  renderSdpLamps();
+  saveParametersToFirebase();
+}
+function renderSdpLamps(){
+  const wrap = document.getElementById('sdpLampRow');
+  if(!wrap) return;
+  wrap.innerHTML = SDP_LABELS.map((label,i)=>{
+    const on = sdpState[i];
+    return `<div class="sdp-lamp ${on?'on':''}"><div class="bulb"></div><div class="nm">${label}</div><div class="st">${on?'ON':'OFF'}</div></div>`;
+  }).join('');
+  const count = sdpState.filter(Boolean).length;
+  const summary = document.getElementById('sdpLampSummary');
+  if(summary) summary.textContent = count+' dari '+SDP_LABELS.length+' SDP menyala.';
+}
+function renderSdpGrid(){
+  const grid = document.getElementById('sdpGrid');
+  if(!grid) return;
+  grid.innerHTML = SDP_LABELS.map((label,i)=>{
+    const on = sdpState[i], disabled = distMode==='auto';
+    return `<div class="sdp-btn fx ${i===0?'sdp-first':''} ${on?'active':''} ${disabled?'disabled':''}" onclick="toggleSdp(${i})">
+      <div class="nm">${label}</div><div class="st">${on?'ON':'OFF'}</div>
+    </div>`;
+  }).join('');
+}
+function changeDelay(idx, val){
+  timerState[idx] = Math.max(0, Math.min(999, parseInt(val)||0));
+  saveParametersToFirebase();
+  document.getElementById('fill'+idx).style.width = Math.min(100, timerState[idx]/60*100)+'%';
+  const btn = document.getElementById('okbtn'+idx);
+  btn.classList.remove('saved'); btn.textContent='OK';
+}
+function saveDelay(idx){
+  const btn = document.getElementById('okbtn'+idx);
+  btn.classList.add('saved'); btn.textContent='✓ OK';
+}
+function renderTimerRows(){
+  const wrap = document.getElementById('timerRows');
+  if(!wrap) return;
+  wrap.innerHTML = SDP_LABELS.map((label,i)=>{
+    const pct = Math.min(100, timerState[i]/60*100);
+    return `<div class="timer-row">
+      <div class="sdp-nm">${label}</div>
+      <div class="track"><div class="fill" id="fill${i}" style="width:${pct}%"></div></div>
+      <div class="delay-input"><input type="number" min="0" max="999" value="${timerState[i]}" oninput="changeDelay(${i}, this.value)"><span>detik</span></div>
+      <div class="ok-btn fx" id="okbtn${i}" onclick="saveDelay(${i})">OK</div>
+    </div>`;
+  }).join('');
+}
+
+/* ===== KONTROL ATS =====
+   Sumber yang dikontrol di sini SAMA dengan 'currentSource' yang dipakai
+   simulasi power meter & sistem alarm proteksi (bukan variabel terpisah) —
+   supaya ATS, Dashboard, dan Alarm benar-benar satu kesatuan sistem:
+   - Saat MANUAL: teknisi bebas pilih PLN/GENSET/EMS lewat panel ini.
+   - Saat AUTO: pemilihan sumber sepenuhnya mengikuti hasil evaluasi alarm
+     proteksi (lihat triggerAlarmAction & auto-recovery di checkAlarms). */
+const ATS_SOURCES = [ {id:'PLN', nm:'PLN'}, {id:'GENSET', nm:'GENSET'}, {id:'OFF', nm:'EMS'} ];
+let atsMode = 'auto'; // 'auto' | 'manual'
+const atsDelayState = { pln_on:15, genset_on:15, genset_off:30 };
+
+function renderAtsModeSwitch(){
+  document.getElementById('atsModeSwitch').classList.toggle('on', atsMode==='manual');
+  document.getElementById('atsLblAuto').classList.toggle('active', atsMode==='auto');
+  document.getElementById('atsLblManual').classList.toggle('active', atsMode==='manual');
+  document.getElementById('atsLblManual').classList.toggle('warn', atsMode==='manual');
+  document.getElementById('atsAutoNote').style.display = atsMode==='auto' ? 'block' : 'none';
+}
+function requestToggleAtsMode(){
+  if(atsMode==='manual'){
+    // Manual -> Auto: langsung, tanpa password (mematikan akses manual selalu aman)
+    atsMode='auto';
+    renderAtsModeSwitch(); renderAtsSourceControl(); saveParametersToFirebase();
+  } else {
+    openAtsManualModal();
+  }
+}
+function openAtsManualModal(){
+  document.getElementById('atsPwModalInput').value='';
+  document.getElementById('atsPwModalErr').textContent='';
+  document.getElementById('atsPwModal').classList.add('show');
+  setTimeout(()=>document.getElementById('atsPwModalInput').focus(), 50);
+}
+function closeAtsManualModal(){ document.getElementById('atsPwModal').classList.remove('show'); }
+function confirmAtsManualPassword(){
+  const pw = document.getElementById('atsPwModalInput').value;
+  if(pw === MANUAL_PASSWORD_DEMO){
+    atsMode='manual';
+    closeAtsManualModal();
+    renderAtsModeSwitch(); renderAtsSourceControl(); saveParametersToFirebase();
+  } else {
+    document.getElementById('atsPwModalErr').textContent = 'Password salah.';
+  }
+}
+
+function selectAtsSource(id){
+  if(atsMode==='auto') return;
+  setSource(id); // sumber yang sama dipakai Dashboard & Alarm — otomatis sinkron
+  addAlarmLog('Sumber dipindahkan MANUAL ke '+(id==='OFF'?'EMS':id)+' oleh teknisi lewat halaman ATS.');
+}
+
+function renderAtsSourceIndicator(){
+  const wrap = document.getElementById('atsSourceIndicator');
+  if(!wrap) return;
+  wrap.innerHTML = ATS_SOURCES.map(s=>{
+    const isOn = currentSource === s.id;
+    const isEms = s.id === 'OFF';
+    return `<div class="source-pill ${isOn?'is-active':''} ${isOn&&isEms?'ems':''}">
+      <span class="nm">${s.nm}</span>
+      <span class="dot ${isOn?'on':''} ${isOn&&isEms?'ems':''}"></span>
+    </div>`;
+  }).join('');
+}
+function renderAtsSourceControl(){
+  const wrap = document.getElementById('atsSourceControl');
+  if(!wrap) return;
+  const disabled = atsMode === 'auto';
+  wrap.innerHTML = ATS_SOURCES.map(s=>{
+    const isOn = currentSource === s.id;
+    const isEms = s.id === 'OFF';
+    return `<div class="source-btn fx ${isOn?'active':''} ${isOn&&isEms?'ems':''} ${disabled?'disabled':''}" onclick="selectAtsSource('${s.id}')">
+      <div class="nm">${s.nm}</div>
+      <div class="st">${isOn ? 'AKTIF' : 'PILIH'}</div>
+    </div>`;
+  }).join('');
+  const emsNote = document.getElementById('atsEmsNote');
+  if(emsNote) emsNote.classList.toggle('hidden', currentSource!=='OFF');
+}
+
+function changeAtsDelay(key, val){
+  const v = Math.max(0, Math.min(999, parseInt(val)||0));
+  atsDelayState[key] = v;
+  saveParametersToFirebase();
+  document.getElementById('atsInput_'+key).value = v;
+  document.getElementById('atsFill_'+key).style.width = Math.min(100, v/60*100)+'%';
+  markAtsUnsaved(key);
+}
+function stepAtsDelay(key, dir){
+  changeAtsDelay(key, atsDelayState[key] + dir);
+}
+function markAtsUnsaved(key){
+  const btn = document.getElementById('atsOkbtn_'+key);
+  if(!btn) return;
+  btn.classList.remove('saved');
+  btn.textContent = 'OK';
+}
+function saveAtsDelay(key){
+  const btn = document.getElementById('atsOkbtn_'+key);
+  btn.classList.add('saved');
+  btn.textContent = '✓ OK';
+}
+function atsDelayRowHtml(key, label){
+  const v = atsDelayState[key];
+  const pct = Math.min(100, v/60*100);
+  return `<div class="delay-row">
+    <div class="lbl">${label}</div>
+    <div class="track"><div class="fill" id="atsFill_${key}" style="width:${pct}%"></div></div>
+    <div class="delay-input">
+      <input type="number" id="atsInput_${key}" min="0" max="999" value="${v}" oninput="changeAtsDelay('${key}', this.value)">
+      <span>dtk</span>
+      <div class="stepper">
+        <button type="button" onclick="stepAtsDelay('${key}',1)">▲</button>
+        <button type="button" onclick="stepAtsDelay('${key}',-1)">▼</button>
+      </div>
+    </div>
+    <div class="ok-btn fx" id="atsOkbtn_${key}" onclick="saveAtsDelay('${key}')">OK</div>
+  </div>`;
+}
+function renderAtsDelayRows(){
+  const plnWrap = document.getElementById('atsDelayRowsPln');
+  const gensetWrap = document.getElementById('atsDelayRowsGenset');
+  if(!plnWrap || !gensetWrap) return;
+  plnWrap.innerHTML = atsDelayRowHtml('pln_on', 'ON');
+  gensetWrap.innerHTML = atsDelayRowHtml('genset_on', 'ON') + atsDelayRowHtml('genset_off', 'OFF');
+}
+
+const HARI = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+const BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+function updateClock(){
+  const d = new Date();
+  document.getElementById('clockText').textContent = HARI[d.getDay()]+', '+d.getDate()+' '+BULAN[d.getMonth()]+' '+d.getFullYear()+' — '+
+    String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+':'+String(d.getSeconds()).padStart(2,'0');
+}
+setInterval(updateClock, 1000);
+
+function seedLoginLog(){
+  const now = new Date();
+  document.getElementById('loginSinceText').textContent = now.toLocaleTimeString('id-ID');
+  const contoh = [
+    {user:'Admin', time: now.toLocaleString('id-ID'), ip:'192.168.4.2 (sesi ini)'},
+    {user:'Admin', time: new Date(now-3600e3*5).toLocaleString('id-ID'), ip:'192.168.4.3'},
+    {user:'Teknisi', time: new Date(now-3600e3*20).toLocaleString('id-ID'), ip:'192.168.4.5'},
+  ];
+  document.getElementById('loginLog').innerHTML = contoh.map(c=>`<div class="row"><span>${c.user} · ${c.time}</span><span class="ip">${c.ip}</span></div>`).join('');
+}
+
+let currentSource = 'PLN';
+let sourceForcedByAlarm = false; // true jika PLN->GENSET/OFF dipindah otomatis oleh alarm (bukan manual)
+function setSource(src){
+  currentSource = src;
+  saveParametersToFirebase();
+  sourceForcedByAlarm = false; // pemanggilan manual selalu mereset flag; triggerAlarmAction akan set true setelahnya
+  ['PLN','GENSET','OFF'].forEach(s=>document.getElementById('demo'+s).classList.toggle('active', s===src));
+  document.getElementById('badgeONI').className = 'mode-badge' + (src==='PLN' ? ' on oni' : '');
+  document.getElementById('badgeONII').className = 'mode-badge' + (src==='GENSET' ? ' on onii' : '');
+  document.getElementById('badgeOFF').className = 'mode-badge' + (src==='OFF' ? ' on off' : '');
+  renderAtsSourceIndicator();
+  renderAtsSourceControl();
+}
+
+const PROFILES = {
+  PLN:    { vln:220, vll:380, freq:50.0, pf:0.93, current:18, jitter:1.0 },
+  GENSET: { vln:216, vll:374, freq:49.85, pf:0.88, current:16, jitter:1.8 },
+  OFF:    { vln:0,   vll:0,   freq:0,    pf:0,    current:0,  jitter:0 }
+};
+let sim = { vR:220,vS:220,vT:220, vRS:380,vST:380,vTR:380, iR:0,iS:0,iT:0, freq:50, pf:0.93 };
+let prevSim = {...sim};
+/* 'sim' = nilai yang ditampilkan di display & grafik halaman utama (mengikuti
+   sumber aktif: PLN atau GENSET). Nantinya nilai ini akan diisi dari data
+   yang dikirim ESP32 (voltase, ampere, dll), menggantikan simulasi di
+   tickSim() di bawah. */
+/* plnMeter: pembacaan power meter pada sisi INPUT/incoming PLN, terpisah dari
+   'sim' (yang merepresentasikan tampilan output/beban sesuai sumber aktif).
+   Alarm proteksi HARUS selalu mengacu ke plnMeter ini, bukan ke 'sim', supaya
+   proteksi tetap bisa memantau & mendeteksi kondisi PLN pulih normal walaupun
+   panel sedang berpindah ke GENSET atau sedang OFF. Nilai ini juga nantinya
+   diisi dari data yang dikirim ESP32, menggantikan simulasi di tickMeter(). */
+let plnMeter = { vR:220,vS:220,vT:220, vRS:380,vST:380,vTR:380 };
+function tickMeter(){
+  const p = PROFILES.PLN;
+  let tR=p.vln, tS=p.vln, tT=p.vln, tRS=p.vll, tST=p.vll, tTR=p.vll;
+  if(faultOverride){
+    if(faultOverride==='uv'){ tR*=0.72; tS*=0.72; tT*=0.72; tRS*=0.72; tST*=0.72; tTR*=0.72; }
+    else if(faultOverride==='ov'){ tR*=1.18; tS*=1.18; tT*=1.18; tRS*=1.18; tST*=1.18; tTR*=1.18; }
+    else if(faultOverride.type==='spf'){
+      const ph = faultOverride.phase;
+      if(ph==='R'){ tR=4; tRS*=0.5; tTR*=0.5; }
+      if(ph==='S'){ tS=4; tRS*=0.5; tST*=0.5; }
+      if(ph==='T'){ tT=4; tST*=0.5; tTR*=0.5; }
+    }
+  }
+  function step(cur, target, j){ return cur + (target-cur)*0.25 + (Math.random()-0.5)*j; }
+  plnMeter.vR = step(plnMeter.vR, tR, p.jitter);
+  plnMeter.vS = step(plnMeter.vS, tS, p.jitter);
+  plnMeter.vT = step(plnMeter.vT, tT, p.jitter);
+  plnMeter.vRS = step(plnMeter.vRS, tRS, p.jitter*1.6);
+  plnMeter.vST = step(plnMeter.vST, tST, p.jitter*1.6);
+  plnMeter.vTR = step(plnMeter.vTR, tTR, p.jitter*1.6);
+}
+function tickSim(){
+  prevSim = {...sim};
+  const p = PROFILES[currentSource];
+  let tR=p.vln, tS=p.vln, tT=p.vln, tRS=p.vll, tST=p.vll, tTR=p.vll;
+
+  if(currentSource!=='OFF' && faultOverride){
+    if(faultOverride==='uv'){ tR*=0.72; tS*=0.72; tT*=0.72; tRS*=0.72; tST*=0.72; tTR*=0.72; }
+    else if(faultOverride==='ov'){ tR*=1.18; tS*=1.18; tT*=1.18; tRS*=1.18; tST*=1.18; tTR*=1.18; }
+    else if(faultOverride.type==='spf'){
+      const ph = faultOverride.phase;
+      if(ph==='R'){ tR=4; tRS*=0.5; tTR*=0.5; }
+      if(ph==='S'){ tS=4; tRS*=0.5; tST*=0.5; }
+      if(ph==='T'){ tT=4; tST*=0.5; tTR*=0.5; }
+    }
+  }
+
+  function step(cur, target, j){ if(target===0) return 0; return cur + (target-cur)*0.25 + (Math.random()-0.5)*j; }
+  sim.vR = step(sim.vR, tR, p.jitter);
+  sim.vS = step(sim.vS, tS, p.jitter);
+  sim.vT = step(sim.vT, tT, p.jitter);
+  sim.vRS = step(sim.vRS, tRS, p.jitter*1.6);
+  sim.vST = step(sim.vST, tST, p.jitter*1.6);
+  sim.vTR = step(sim.vTR, tTR, p.jitter*1.6);
+  sim.iR = Math.max(0, step(sim.iR, p.current, p.jitter*0.8));
+  sim.iS = Math.max(0, step(sim.iS, p.current, p.jitter*0.8));
+  sim.iT = Math.max(0, step(sim.iT, p.current, p.jitter*0.8));
+  sim.freq = p.freq===0 ? 0 : step(sim.freq, p.freq, 0.06);
+  sim.pf = p.pf===0 ? 0 : Math.min(1, Math.max(0, step(sim.pf, p.pf, 0.02)));
+}
+
+/* ===== ALARM & PROTEKSI ===== */
+let faultOverride = null; // null | 'uv' | 'ov' | {type:'spf', phase:'R'|'S'|'T'}
+function simulateFault(type, phase){
+  faultOverride = type===null ? null : (type==='spf' ? {type:'spf', phase} : type);
+}
+
+const alarms = {
+  uv: { name:'Under Voltage (Fasa–Netral & Antar Fasa)', enabled:true,
+        nl:{R:200,S:200,T:200}, ll:{RS:350,ST:350,TR:350},
+        delaySec:3, pendingSec:0, action:'genset', active:false },
+  ov: { name:'Over Voltage (Fasa–Netral & Antar Fasa)', enabled:true,
+        nl:{R:240,S:240,T:240}, ll:{RS:410,ST:410,TR:410},
+        delaySec:3, pendingSec:0, action:'genset', active:false },
+  spf: { name:'Single Phase Failure', enabled:true, action:'off', active:false },
+};
+let alarmLog = [];
+function addAlarmLog(msg){
+  alarmLog.unshift(new Date().toLocaleTimeString('id-ID') + ' — ' + msg);
+  if(alarmLog.length>12) alarmLog.pop();
+  renderAlarmLog();
+}
+function actionLabel(a){ return a==='genset'?'Switch ke Genset':a==='off'?'OFF Seluruh Panel':'Disable'; }
+
+function triggerAlarmAction(alarm, detail){
+  const detailTxt = detail ? ' (terdeteksi pada: '+detail+')' : '';
+  addAlarmLog(alarm.name + ' AKTIF' + detailTxt + ' — tindakan: ' + actionLabel(alarm.action));
+  if(alarm.action==='genset'){
+    setSource('GENSET');
+    sourceForcedByAlarm = true;
+  } else if(alarm.action==='off'){
+    setSource('OFF');
+    sourceForcedByAlarm = true;
+    sdpState.fill(false);
+    if(document.getElementById('pageDistribusi').style.display!=='none') renderSdpGrid();
+    renderSdpLamps();
+  }
+  // 'disable' -> dicatat di log saja untuk prototipe ini
+}
+
+const PAIR_LABELS_NL = ['R-N','S-N','T-N'];
+const PAIR_LABELS_LL = ['R-S','S-T','T-R'];
+function listBreaches(vals, thArr, labels, cmp){
+  const out = [];
+  vals.forEach((v,i)=>{ if(cmp(v, thArr[i])) out.push(labels[i]); });
+  return out;
+}
+
+function checkAlarms(){
+  // Power meter (plnMeter) memantau tegangan PLN masuk secara independen,
+  // sehingga proteksi tetap "hidup" walaupun panel sedang di GENSET/OFF —
+  // ini yang dipakai untuk menentukan kapan boleh kembali otomatis ke PLN.
+  const nlVals=[plnMeter.vR,plnMeter.vS,plnMeter.vT], llVals=[plnMeter.vRS,plnMeter.vST,plnMeter.vTR];
+
+  // Deteksi kondisi fasa putus (dipakai untuk SPF, dan untuk menahan Under
+  // Voltage supaya tidak ikut bertindak kalau penyebabnya memang fasa putus).
+  const lostPhases = ['R','S','T'].filter((ph,i)=>nlVals[i]<30);
+  const normalCount = nlVals.filter(v=>v>150).length;
+  const spfCondition = lostPhases.length>0 && lostPhases.length<3 && normalCount>0;
+
+  // Under Voltage — gabungan ambang Fasa-Netral & Antar Fasa jadi satu alarm/tindakan.
+  // Kalau kondisinya adalah fasa putus (spfCondition), Under Voltage TIDAK bertindak
+  // sama sekali — itu murni ranah alarm Single Phase Failure di bawah.
+  const uvNlTh = [alarms.uv.nl.R, alarms.uv.nl.S, alarms.uv.nl.T];
+  const uvLlTh = [alarms.uv.ll.RS, alarms.uv.ll.ST, alarms.uv.ll.TR];
+  const uvNlBreaches = (alarms.uv.enabled && !spfCondition) ? listBreaches(nlVals, uvNlTh, PAIR_LABELS_NL, (v,t)=>v>0&&v<t) : [];
+  const uvLlBreaches = (alarms.uv.enabled && !spfCondition) ? listBreaches(llVals, uvLlTh, PAIR_LABELS_LL, (v,t)=>v>0&&v<t) : [];
+  const uvBreaches = [...uvNlBreaches, ...uvLlBreaches];
+  if(uvBreaches.length>0){
+    // checkAlarms dipanggil sekali per TICK_MS (1 detik), jadi pendingSec
+    // bertambah 1 setiap kali kondisi under voltage masih terdeteksi —
+    // ini jeda konfirmasi sebelum tindakan benar-benar dijalankan, supaya
+    // yakin dulu ini memang under voltage dan bukan sekadar fasa yang putus.
+    alarms.uv.pendingSec += 1;
+    if(alarms.uv.pendingSec >= alarms.uv.delaySec && !alarms.uv.active){
+      triggerAlarmAction(alarms.uv, uvBreaches.join(', ') + ' — terkonfirmasi ' + alarms.uv.delaySec + 'dtk');
+      alarms.uv.active = true;
+    }
+  } else {
+    alarms.uv.pendingSec = 0;
+    alarms.uv.active = false;
+  }
+
+  // Over Voltage — gabungan ambang Fasa-Netral & Antar Fasa jadi satu alarm/tindakan,
+  // juga dengan jeda konfirmasi sebelum tindakan dijalankan (sama seperti Under Voltage).
+  const ovNlTh = [alarms.ov.nl.R, alarms.ov.nl.S, alarms.ov.nl.T];
+  const ovLlTh = [alarms.ov.ll.RS, alarms.ov.ll.ST, alarms.ov.ll.TR];
+  const ovNlBreaches = alarms.ov.enabled ? listBreaches(nlVals, ovNlTh, PAIR_LABELS_NL, (v,t)=>v>t) : [];
+  const ovLlBreaches = alarms.ov.enabled ? listBreaches(llVals, ovLlTh, PAIR_LABELS_LL, (v,t)=>v>t) : [];
+  const ovBreaches = [...ovNlBreaches, ...ovLlBreaches];
+  if(ovBreaches.length>0){
+    alarms.ov.pendingSec += 1;
+    if(alarms.ov.pendingSec >= alarms.ov.delaySec && !alarms.ov.active){
+      triggerAlarmAction(alarms.ov, ovBreaches.join(', ') + ' — terkonfirmasi ' + alarms.ov.delaySec + 'dtk');
+      alarms.ov.active = true;
+    }
+  } else {
+    alarms.ov.pendingSec = 0;
+    alarms.ov.active = false;
+  }
+
+  // Single Phase Failure (fasa putus) — TIDAK memakai jeda, langsung bertindak
+  // begitu terdeteksi, karena ini kondisi darurat yang butuh respons cepat.
+  const spfTrig = alarms.spf.enabled && spfCondition;
+  if(spfTrig && !alarms.spf.active) triggerAlarmAction(alarms.spf, 'Fasa '+lostPhases.join(', ')+' putus');
+  alarms.spf.active = spfTrig;
+
+  // Auto-recovery: begitu pembacaan power meter kembali normal (tidak ada
+  // alarm yang aktif) DAN sumber saat ini berpindah karena tindakan alarm
+  // (bukan pilihan manual teknisi), sistem otomatis kembali ke sumber PLN.
+  if(sourceForcedByAlarm && Object.values(alarms).every(a=>!a.active)){
+    sourceForcedByAlarm = false;
+    setSource('PLN');
+    addAlarmLog('Tegangan PLN sudah normal kembali (sesuai pembacaan power meter) — sumber otomatis dikembalikan ke PLN (ON I).');
+  }
+
+  renderAlarmBanner();
+  updateAlarmStatusOnly();
+}
+
+function renderAlarmBanner(){
+  const active = Object.values(alarms).filter(a=>a.active);
+  const banner = document.getElementById('alarmBanner');
+  if(active.length===0){ banner.classList.remove('show'); return; }
+  banner.classList.add('show');
+  banner.innerHTML = '⚠ ' + active.map(a=>a.name).join('  ·  ') + ' — periksa panel segera';
+}
+
+function toggleAlarmEnabled(key){
+  alarms[key].enabled = !alarms[key].enabled;
+  if(!alarms[key].enabled) alarms[key].active=false;
+  renderAlarmCards(); renderAlarmBanner();
+}
+function setThreshold(key, group, phase, val){ alarms[key][group][phase] = parseFloat(val)||0; }
+function setAlarmAction(key, action){ alarms[key].action = action; renderAlarmCards(); }
+function setAlarmDelay(key, val){ alarms[key].delaySec = Math.max(0, parseFloat(val)||0); }
+
+function alarmCardHtml(key){
+  const a = alarms[key];
+  const hasNl = !!a.nl;
+  const hasLl = !!a.ll;
+  return `<div class="card alarm-card" data-key="${key}">
+    <div class="ac-head">
+      <div>
+        <div class="ac-title">${a.name}</div>
+        <div class="ac-status ${a.active?'active':''}">${a.active?'⚠ AKTIF':(a.pendingSec>0?'⏳ Konfirmasi '+Math.max(0,Math.ceil(a.delaySec-a.pendingSec))+'dtk':'NORMAL')}</div>
+      </div>
+      <div class="mswitch ${a.enabled?'on':''}" onclick="toggleAlarmEnabled('${key}')"><div class="knob"></div></div>
+    </div>
+    ${a.delaySec!==undefined ? `
+    <div class="ac-lbl">JEDA KONFIRMASI SEBELUM TINDAKAN</div>
+    <div class="ac-thresh" style="margin-bottom:16px;">
+      <div class="th-field"><label>Delay</label><input type="number" min="0" step="1" value="${a.delaySec}" oninput="setAlarmDelay('${key}',this.value)"> detik</div>
+    </div>
+    <div class="ac-desc" style="margin-bottom:16px;">Tegangan harus tetap melewati ambang selama durasi ini sebelum tindakan dijalankan, untuk menghindari aksi akibat gangguan sesaat/glitch.</div>
+    ` : ''}
+    ${hasNl ? `
+    <div class="ac-lbl">AMBANG TEGANGAN FASA–NETRAL (per fasa)</div>
+    <div class="ac-thresh three" style="margin-bottom:16px;">
+      <div class="th-field"><label>R-N</label><input type="number" value="${a.nl.R}" oninput="setThreshold('${key}','nl','R',this.value)"> V</div>
+      <div class="th-field"><label>S-N</label><input type="number" value="${a.nl.S}" oninput="setThreshold('${key}','nl','S',this.value)"> V</div>
+      <div class="th-field"><label>T-N</label><input type="number" value="${a.nl.T}" oninput="setThreshold('${key}','nl','T',this.value)"> V</div>
+    </div>` : ''}
+    ${hasLl ? `
+    <div class="ac-lbl">AMBANG TEGANGAN ANTAR FASA (per pasangan)</div>
+    <div class="ac-thresh three" style="margin-bottom:16px;">
+      <div class="th-field"><label>R-S</label><input type="number" value="${a.ll.RS}" oninput="setThreshold('${key}','ll','RS',this.value)"> V</div>
+      <div class="th-field"><label>S-T</label><input type="number" value="${a.ll.ST}" oninput="setThreshold('${key}','ll','ST',this.value)"> V</div>
+      <div class="th-field"><label>T-R</label><input type="number" value="${a.ll.TR}" oninput="setThreshold('${key}','ll','TR',this.value)"> V</div>
+    </div>` : ''}
+    ${(!hasNl && !hasLl) ? `<div class="ac-desc">Terpicu jika salah satu tegangan fasa (R/S/T) hilang sementara fasa lain masih normal.</div>` : ''}
+    <div class="ac-actions">
+      <div class="ac-lbl">TINDAKAN SAAT TERPICU</div>
+      <div class="action-pills">
+        <button class="apill fx ${a.action==='genset'?'sel':''}" onclick="setAlarmAction('${key}','genset')">Switch Genset</button>
+        <button class="apill fx ${a.action==='disable'?'sel':''}" onclick="setAlarmAction('${key}','disable')">Disable</button>
+        <button class="apill fx ${a.action==='off'?'sel':''}" onclick="setAlarmAction('${key}','off')">OFF Panel</button>
+      </div>
+    </div>
+  </div>`;
+}
+function renderAlarmCards(){
+  document.getElementById('alarmCards').innerHTML = Object.keys(alarms).map(alarmCardHtml).join('');
+}
+function updateAlarmStatusOnly(){
+  Object.keys(alarms).forEach(key=>{
+    const el = document.querySelector('#alarmCards .alarm-card[data-key="'+key+'"] .ac-status');
+    if(!el) return;
+    const a = alarms[key];
+    let txt;
+    if(a.active) txt = '⚠ AKTIF';
+    else if(a.pendingSec>0) txt = '⏳ Konfirmasi ' + Math.max(0,Math.ceil(a.delaySec-a.pendingSec)) + 'dtk';
+    else txt = 'NORMAL';
+    el.textContent = txt;
+    el.classList.toggle('active', a.active);
+  });
+}
+function renderAlarmLog(){
+  const el = document.getElementById('alarmLog');
+  if(!el) return;
+  el.innerHTML = alarmLog.length ? alarmLog.map(m=>'<div class="row">'+m+'</div>').join('') : '<div class="row">Belum ada alarm yang terpicu.</div>';
+}
+
+function renderValueBoxes(interpT){
+  const lerp=(a,b)=>a+(b-a)*interpT;
+  document.getElementById('vRN').textContent = lerp(prevSim.vR, sim.vR).toFixed(1);
+  document.getElementById('vSN').textContent = lerp(prevSim.vS, sim.vS).toFixed(1);
+  document.getElementById('vTN').textContent = lerp(prevSim.vT, sim.vT).toFixed(1);
+  document.getElementById('vRS').textContent = lerp(prevSim.vRS, sim.vRS).toFixed(1);
+  document.getElementById('vST').textContent = lerp(prevSim.vST, sim.vST).toFixed(1);
+  document.getElementById('vTR').textContent = lerp(prevSim.vTR, sim.vTR).toFixed(1);
+  document.getElementById('iR').textContent = lerp(prevSim.iR, sim.iR).toFixed(1);
+  document.getElementById('iS').textContent = lerp(prevSim.iS, sim.iS).toFixed(1);
+  document.getElementById('iT').textContent = lerp(prevSim.iT, sim.iT).toFixed(1);
+}
+
+const RST_COLORS = { r:'#ff3b3b', s:'#2f8dff', t3:'#22e07a', hz:'#fde047', pf:'#f97316' };
+const RANGE_LABELS = [ ['jam','1 Jam'], ['hari','Hari Ini'], ['minggu','Minggu Ini'], ['bulan','Bulan Ini'], ['tahun','Tahun Ini'] ];
+
+function genSyntheticHistory(rangeKey, keys, baselineMap){
+  const now = Date.now();
+  let points, stepMs;
+  if(rangeKey==='jam'){ points=60; stepMs=60*1000; }
+  else if(rangeKey==='hari'){ points=48; stepMs=30*60*1000; }
+  else if(rangeKey==='minggu'){ points=56; stepMs=(7*24*3600*1000)/56; }
+  else if(rangeKey==='bulan'){ points=30; stepMs=24*3600*1000; }
+  else { points=12; stepMs=30*24*3600*1000; }
+
+  const baseline = baselineMap();
+  const arr=[];
+  for(let i=points-1;i>=0;i--){
+    const t = new Date(now - i*stepMs);
+    const hourOfDay = t.getHours() + t.getMinutes()/60;
+    const dayFactor = 1 + 0.07*Math.sin((hourOfDay-9)/24*2*Math.PI) + 0.03*Math.sin(i*0.7);
+    const row = {t};
+    keys.forEach(k=>{
+      const b = baseline[k]||0;
+      const noise = (Math.random()-0.5)*b*0.025;
+      row[k] = Math.max(0, b*dayFactor+noise);
+    });
+    arr.push(row);
+  }
+  return arr;
+}
+
+function createChart(opts){
+  const state = { mode:'live', rangeKey:null, followLive:true, liveData:[], historyCache:{}, viewCount:30, offset:0, dragging:false, dragStartX:0, dragStartOffset:0, vis:{} };
+  opts.keys.forEach(k=>state.vis[k]=true);
+
+  const panel = document.getElementById(opts.panelId);
+  panel.innerHTML = `
+    <div class="ch-head">
+      <h3>${opts.title}</h3>
+      <div class="ch-controls">
+        <div class="rst-toggles" id="${opts.id}_toggles"></div>
+        <div class="range-btns" id="${opts.id}_ranges"></div>
+        <button class="live-btn active fx" id="${opts.id}_live"><span class="dot"></span>LIVE</button>
+        <div class="zoom-btns">
+          <button class="zoom-btn fx" id="${opts.id}_zin">+</button>
+          <button class="zoom-btn fx" id="${opts.id}_zout">−</button>
+        </div>
+      </div>
+    </div>
+    <div class="chart-wrap"><canvas id="${opts.id}_canvas"></canvas></div>
+    <div class="now-vals" id="${opts.id}_now"></div>
+    <div class="range-hint" id="${opts.id}_hint">Mode Live — mengikuti data real-time. Scroll/geser grafik untuk lihat riwayat.</div>
+  `;
+
+  document.getElementById(opts.id+'_toggles').innerHTML = opts.keys.map(k=>`<div class="rst-chip on" style="color:${RST_COLORS[k]}" onclick="chartToggleVis('${opts.id}','${k}',this)"><span class="dot" style="background:${RST_COLORS[k]}"></span>${opts.labels[k]}</div>`).join('');
+  document.getElementById(opts.id+'_ranges').innerHTML = RANGE_LABELS.map(([key,lbl])=>`<button class="range-btn fx" onclick="chartSetRange('${opts.id}','${key}',event)">${lbl}</button>`).join('');
+  document.getElementById(opts.id+'_live').onclick = ()=>chartGoLive(opts.id);
+  document.getElementById(opts.id+'_zin').onclick = ()=>chartZoom(opts.id, 0.8);
+  document.getElementById(opts.id+'_zout').onclick = ()=>chartZoom(opts.id, 1.25);
+
+  const canvas = document.getElementById(opts.id+'_canvas');
+  canvas.addEventListener('wheel', e=>{ e.preventDefault(); chartZoom(opts.id, e.deltaY>0?1.15:0.87); }, {passive:false});
+  canvas.addEventListener('pointerdown', e=>{
+    state.dragging = true; state.dragStartX = e.clientX; state.dragStartOffset = state.offset;
+    state.followLive = false;
+    canvas.setPointerCapture(e.pointerId);
+  });
+  canvas.addEventListener('pointermove', e=>{
+    if(!state.dragging) return;
+    const dataArr = api.getActiveData();
+    const rect = canvas.getBoundingClientRect();
+    const pxPerPoint = (rect.width-50) / state.viewCount;
+    const deltaPoints = Math.round((e.clientX - state.dragStartX) / pxPerPoint);
+    let newOffset = state.dragStartOffset - deltaPoints;
+    newOffset = Math.max(0, Math.min(newOffset, Math.max(0, dataArr.length - state.viewCount)));
+    state.offset = newOffset;
+    api.updateHint(); api.render(1);
+  });
+  ['pointerup','pointerleave'].forEach(ev=>canvas.addEventListener(ev, ()=>{ state.dragging=false; }));
+
+  function getActiveData(){
+    if(state.mode==='live') return state.liveData;
+    if(!state.historyCache[state.rangeKey]) state.historyCache[state.rangeKey] = genSyntheticHistory(state.rangeKey, opts.keys, opts.baselineMap);
+    return state.historyCache[state.rangeKey];
+  }
+  function updateHint(){
+    const hint = document.getElementById(opts.id+'_hint');
+    if(state.mode==='live' && state.followLive){ hint.textContent = 'Mode Live — mengikuti data real-time. Scroll/geser grafik untuk lihat riwayat.'; }
+    else if(state.mode==='live'){ hint.textContent = 'Live (dijeda) — geser untuk lihat beberapa menit lalu. Klik LIVE untuk kembali mengikuti.'; }
+    else {
+      const dataArr = getActiveData();
+      const s = dataArr[Math.max(0,state.offset)], e2 = dataArr[Math.min(dataArr.length-1, state.offset+state.viewCount-1)];
+      if(s && e2) hint.textContent = 'Riwayat (simulasi): '+s.t.toLocaleString('id-ID')+' — '+e2.t.toLocaleString('id-ID');
+    }
+  }
+  function render(interpT){
+    interpT = interpT===undefined?1:interpT;
+    const dataArr = getActiveData();
+    if(dataArr.length<2) return;
+    let viewData;
+    if(state.mode==='live' && state.followLive){
+      state.offset = Math.max(0, dataArr.length - state.viewCount);
+      viewData = dataArr.slice(state.offset).map(d=>({...d}));
+      if(viewData.length){
+        const lastIdx = viewData.length-1;
+        opts.keys.forEach(k=>{
+          const simKey = opts.simKeyMap[k];
+          viewData[lastIdx][k] = prevSim[simKey] + (sim[simKey]-prevSim[simKey])*interpT;
+        });
+      }
+    } else {
+      state.offset = Math.max(0, Math.min(state.offset, Math.max(0,dataArr.length-state.viewCount)));
+      viewData = dataArr.slice(state.offset, state.offset+state.viewCount);
+    }
+    drawChart(opts.id+'_canvas', viewData, opts.keys, state.vis, opts.unit, opts.fixed);
+    const nowEl = document.getElementById(opts.id+'_now');
+    if(viewData.length){
+      const last = viewData[viewData.length-1];
+      nowEl.innerHTML = opts.keys.map(k=>'<span style="color:'+RST_COLORS[k]+'">'+opts.labels[k]+': '+last[k].toFixed(opts.fixed)+opts.unit+'</span>').join('');
+    }
+  }
+
+  const api = { state, render, updateHint, getActiveData, opts };
+  return api;
+}
+
+const charts = {};
+function chartToggleVis(id, key, el){ const c=charts[id]; c.state.vis[key]=!c.state.vis[key]; el.classList.toggle('on', c.state.vis[key]); c.render(1); }
+function chartSetRange(id, rangeKey, evt){
+  const c = charts[id];
+  c.state.mode='history'; c.state.rangeKey=rangeKey; c.state.followLive=false;
+  const data = c.getActiveData();
+  c.state.viewCount = data.length; c.state.offset = 0;
+  document.querySelectorAll('#'+id+'_ranges .range-btn').forEach(b=>b.classList.remove('active'));
+  if(evt) evt.target.classList.add('active');
+  document.getElementById(id+'_live').classList.remove('active');
+  c.updateHint(); c.render(1);
+}
+function chartGoLive(id){
+  const c = charts[id];
+  c.state.mode='live'; c.state.followLive=true;
+  c.state.viewCount = Math.min(30, Math.max(10, c.state.viewCount));
+  document.querySelectorAll('#'+id+'_ranges .range-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id+'_live').classList.add('active');
+  c.updateHint(); c.render(1);
+}
+function chartZoom(id, factor){
+  const c = charts[id];
+  const dataArr = c.getActiveData();
+  c.state.viewCount = Math.round(Math.max(6, Math.min(dataArr.length, c.state.viewCount*factor)));
+  if(c.state.mode==='history') c.state.offset = Math.max(0, Math.min(c.state.offset, Math.max(0,dataArr.length-c.state.viewCount)));
+  c.updateHint(); c.render(1);
+}
+
+function drawChart(canvasId, dataArr, keys, vis, unit, fixed){
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext('2d');
+  const cssW = canvas.clientWidth || 900;
+  if(canvas.width !== cssW*2){ canvas.width = cssW*2; canvas.height = 340; ctx.scale(2,2); }
+  const W = cssW, H = 170;
+  ctx.clearRect(0,0,W,H);
+  if(dataArr.length < 2) return;
+  const activeKeys = keys.filter(k=>vis[k]);
+  if(activeKeys.length===0) return;
+
+  let allVals = [];
+  dataArr.forEach(d=>activeKeys.forEach(k=>allVals.push(d[k])));
+  let minV = Math.min(...allVals), maxV = Math.max(...allVals);
+  if(minV===maxV){ minV-=1; maxV+=1; }
+  const pad = (maxV-minV)*0.15 || 1;
+  minV -= pad; maxV += pad;
+
+  const marginL=44, marginB=18, marginT=8, marginR=8;
+  const plotW = W-marginL-marginR, plotH = H-marginT-marginB;
+
+  ctx.strokeStyle = '#1c2740'; ctx.lineWidth = 1; ctx.font = '9px monospace'; ctx.fillStyle = '#5c6b85';
+  for(let i=0;i<=3;i++){
+    const y = marginT + plotH*i/3;
+    ctx.beginPath(); ctx.moveTo(marginL,y); ctx.lineTo(W-marginR,y); ctx.stroke();
+    ctx.fillText((maxV-(maxV-minV)*i/3).toFixed(fixed), 2, y+3);
+  }
+
+  keys.forEach(key=>{
+    if(!vis[key]) return;
+    ctx.save();
+    ctx.shadowColor = RST_COLORS[key]; ctx.shadowBlur = 9;
+    ctx.strokeStyle = RST_COLORS[key]; ctx.lineWidth = 2.2; ctx.beginPath();
+    dataArr.forEach((d,i)=>{
+      const x = marginL + plotW*i/(dataArr.length-1);
+      const y = marginT + plotH*(1-(d[key]-minV)/(maxV-minV));
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+    ctx.restore();
+    const last = dataArr[dataArr.length-1];
+    const lx = marginL+plotW, ly = marginT+plotH*(1-(last[key]-minV)/(maxV-minV));
+    ctx.fillStyle = RST_COLORS[key]; ctx.shadowColor=RST_COLORS[key]; ctx.shadowBlur=10;
+    ctx.beginPath(); ctx.arc(lx,ly,3.2,0,7); ctx.fill(); ctx.shadowBlur=0;
+  });
+
+  ctx.fillStyle = '#5c6b85'; ctx.font = '9px monospace'; ctx.textAlign='left';
+  ctx.fillText(dataArr[0].t.toLocaleString('id-ID',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'}), marginL, H-4);
+  ctx.textAlign='right';
+  ctx.fillText(dataArr[dataArr.length-1].t.toLocaleString('id-ID',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'}), W-marginR, H-4);
+  ctx.textAlign='left';
+}
+
+function initCharts(){
+  charts.V = createChart({ id:'V', panelId:'panelV', title:'GRAFIK TEGANGAN (V)', keys:['r','s','t3'], labels:{r:'R',s:'S',t3:'T'}, unit:'V', fixed:0,
+    simKeyMap:{r:'vR', s:'vS', t3:'vT'},
+    baselineMap:()=>({r:PROFILES[currentSource].vln, s:PROFILES[currentSource].vln, t3:PROFILES[currentSource].vln}) });
+  charts.I = createChart({ id:'I', panelId:'panelI', title:'GRAFIK ARUS (A)', keys:['r','s','t3'], labels:{r:'R',s:'S',t3:'T'}, unit:'A', fixed:1,
+    simKeyMap:{r:'iR', s:'iS', t3:'iT'},
+    baselineMap:()=>({r:PROFILES[currentSource].current, s:PROFILES[currentSource].current, t3:PROFILES[currentSource].current}) });
+  charts.F = createChart({ id:'F', panelId:'panelF', title:'GRAFIK FREKUENSI (Hz)', keys:['hz'], labels:{hz:'Hz'}, unit:'Hz', fixed:2,
+    simKeyMap:{hz:'freq'},
+    baselineMap:()=>({hz:PROFILES[currentSource].freq||50}) });
+  charts.PF = createChart({ id:'PF', panelId:'panelPF', title:'GRAFIK POWER FACTOR (COS φ)', keys:['pf'], labels:{pf:'PF'}, unit:'', fixed:3,
+    simKeyMap:{pf:'pf'},
+    baselineMap:()=>({pf:PROFILES[currentSource].pf||0.9}) });
+}
+
+function pushLiveData(){
+  const t = new Date();
+  charts.V.state.liveData.push({t, r:sim.vR, s:sim.vS, t3:sim.vT});
+  charts.I.state.liveData.push({t, r:sim.iR, s:sim.iS, t3:sim.iT});
+  charts.F.state.liveData.push({t, hz:sim.freq});
+  charts.PF.state.liveData.push({t, pf:sim.pf});
+  Object.values(charts).forEach(c=>{ if(c.state.liveData.length>600) c.state.liveData.shift(); });
+}
+
+let lastTick = performance.now();
+const TICK_MS = 1000;
+function animLoop(now){
+  const elapsed = now - lastTick;
+  if(elapsed >= TICK_MS){ tickSim(); tickMeter(); pushLiveData(); checkAlarms(); lastTick = now; }
+  const interpT = Math.min(1, (now-lastTick)/TICK_MS);
+  renderValueBoxes(interpT);
+  Object.values(charts).forEach(c=>c.render(interpT));
+  requestAnimationFrame(animLoop);
+}
+
+function doLogin(){
+  document.getElementById('loginView').style.display='none';
+  document.getElementById('appView').style.display='block';
+  seedLoginLog();
+  updateClock();
+  setSource('PLN');
+  renderAtsModeSwitch();
+  renderAtsDelayRows();
+  initCharts();
+  for(let i=0;i<40;i++){ tickSim(); tickMeter(); pushLiveData(); }
+  renderSdpLamps();
+  startFirebaseParameters();
+  requestAnimationFrame(animLoop);
+}
+function doLogout(){
+  document.getElementById('loginView').style.display='block';
+  document.getElementById('appView').style.display='none';
+}
+</script>
+</body>
+</html>
